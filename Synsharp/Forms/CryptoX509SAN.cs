@@ -15,14 +15,15 @@
  */
 
 using Synsharp.Attribute;
+using Synsharp.Types;
 
 namespace Synsharp.Forms;
 
 [SynapseForm("crypto:x509:san")]
-public class CryptoX509SAN : SynapseObject
+public class CryptoX509SAN : SynapseObject<GUID>
 {
     [SynapseProperty("type")]
-    public string Type { get; set; }
+    public Str Type { get; set; }
     [SynapseProperty("value")]
-    public string Value { get; set; }
+    public Str Value { get; set; }
 }

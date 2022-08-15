@@ -22,7 +22,7 @@ namespace Synsharp;
 /// <summary>
 /// Provides helpers for strings
 /// </summary>
-internal static class StringHelpers
+public static class StringHelpers
 {
     /// <summary>
     /// Normalizes a string such that all words are separated by one space only.

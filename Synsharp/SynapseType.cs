@@ -14,15 +14,9 @@
  * limitations under the License.
  */
 
-using System.Net;
-using Synsharp.Attribute;
+namespace Synsharp;
 
-namespace Synsharp.Forms;
-
-[SynapseForm("inet:ipv4")]
-public class InetIpV4 : SynapseObject<IPAddress>
+public abstract class SynapseType
 {
-    public InetIpV4() : base()
-    {
-    }
+    public abstract string GetCoreValue();
 }

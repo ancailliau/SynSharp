@@ -22,25 +22,28 @@ using System.Reflection;
 using System.Text;
 using Synsharp.Attribute;
 using Synsharp.Forms;
+using Synsharp.Types;
 
 namespace Synsharp;
 
 /// <summary>
 /// Represents a synapse object
 /// </summary>
-public class SynapseObject
+public abstract class SynapseObject
 {
-    [SynapseProperty(".created")] protected DateTime Created { set; get; }
+    [SynapseProperty(".created")] protected Time Created { set; get; }
     [SynapseProperty("iden")] protected string Iden { set; get; }
 
     public HashSet<string> Tags { get; set; } = new();
+
+    public abstract string GetCoreValue();
 }
 
 /// <summary>
 /// Represents a synapse generic object
 /// </summary>
 /// <typeparam name="T">The core value type</typeparam>
-public abstract class SynapseObject<T> : SynapseObject
+public abstract class SynapseObject<T> : SynapseObject where T: SynapseType
 {
     private T _value;
     
@@ -56,36 +59,39 @@ public abstract class SynapseObject<T> : SynapseObject
     /// </summary>
     public SynapseObject()
     {
-        AddNorm<T>(s => s);
-            
-        // Adds conversion from int to IPAddress
-        if (typeof(T) == typeof(IPAddress))
+    }
+
+    public override string GetCoreValue()
+    {
+        if (_value == null) throw new ArgumentNullException(nameof(_value));
+        
+        string value = string.Empty;
+        if (_value is string s)
         {
-            // (T)(object) is needed to outsmart the compiler :nerd_face:
-            AddNorm<Int16>(i => (T)(object)IPAddress.Parse(i.ToString()));
-            AddNorm<Int32>(i => (T)(object)IPAddress.Parse(i.ToString()));
-            AddNorm<Int64>(i => (T)(object)IPAddress.Parse(i.ToString()));
+            value = s.Escape();
         }
-            
-        // Adds conversion from string to Hex
-        if (typeof(T) == typeof(Hex))
+        else if (_value is IPAddress a)
         {
-            AddNorm<string>(i => (T)(object)Hex.Parse(i));
+            value = a.ToString();
         }
-            
-        // Adds conversion from string to GUID
-        if (typeof(T) == typeof(GUID))
+        else if (_value is Int32 i)
         {
-            AddNorm<string>(i => (T)(object)GUID.Parse(i));
+            value = i.ToString();
+        }
+        else if (_value is SynapseType st)
+        {
+            value = st.GetCoreValue();
+        }
+        else if (_value is SynapseObject so)
+        {
+            value = so.GetCoreValue();
+        }
+        else
+        {
+            throw new System.NotImplementedException($"Value of type '{_value.GetType()}' could not be converted.");
         }
 
-        // Adds all default conversion from string
-        var mi = typeof(T).GetMethod("Parse", 
-            BindingFlags.Static | BindingFlags.Public,
-            null,
-            new Type[] { typeof(string) },
-            null);
-        if (mi != null) AddNorm<string>(s => (T) (object) mi.Invoke(null, new object?[] {s}));
+        return value;
     }
         
     /// <summary>
@@ -98,29 +104,16 @@ public abstract class SynapseObject<T> : SynapseObject
         _value = Norm(value);
     }
         
-    protected void AddNorm<S>(Func<S, T> norm)
-    {
-        if (_normalizers.ContainsKey(typeof(S)))
-            _normalizers[typeof(S)] = (s) => norm((S)s);
-        else
-            _normalizers.Add(typeof(S), (s) => norm((S)s));
-    }
-
     private T Norm<S>(S s)
     {
-        try
+        // TODO Avoid duplicates...
+        MethodInfo method = typeof(T).GetMethod("Convert", BindingFlags.Public | BindingFlags.Static);
+        if (method is not null)
         {
-            if (_normalizers.ContainsKey(s.GetType()))
-            {
-                return _normalizers[s.GetType()](s);
-            }
-        }
-        catch
-        {
-            throw new NotImplementedException("Normaliation failed");
+            return (T)method.Invoke(null, new object[]{ s });
         }
 
-        throw new NotImplementedException($"Failed to normalize '{s}' ('{s.GetType().FullName}') to '{typeof(T).FullName}'.");
+        throw new SynapseException($"Type '{typeof(T).FullName}' does not contain a public static method 'Convert'.");
     }
 
     private bool Equals(SynapseObject<T> other)
@@ -195,14 +188,7 @@ public abstract class SynapseObject<T> : SynapseObject
             name = ":" + name;
         }
 
-        if (value is SynapseObject<string> strValue)
-            sb.Append($"{Environment.NewLine}\t{name} = {strValue._value}");
-        else if (value is SynapseObject<int> intValue)
-            sb.Append($"{Environment.NewLine}\t{name} = {intValue._value}");
-        else if (value is SynapseObject<IPAddress> ipValue)
-            sb.Append($"{Environment.NewLine}\t{name} = {ipValue._value}");
-        else
-            sb.Append($"{Environment.NewLine}\t{name} = {value.ToString()}");
+        sb.Append($"{Environment.NewLine}\t{name} = {value.ToString()}");
     }
 
     private IEnumerable<FieldInfo> GetSynapseFields()

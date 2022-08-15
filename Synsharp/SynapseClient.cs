@@ -37,6 +37,7 @@ public class SynapseClient : IDisposable
     private readonly ILogger<SynapseClient> _logger;
     public LayerHelper Layer { get; }
     public ViewHelper View { get; }
+    public NodeHelper Nodes { get; set; }
     
     public StormInitResponse? Init { private get; set; }
     public StormFiniResponse? Fini { private get; set; }
@@ -49,14 +50,15 @@ public class SynapseClient : IDisposable
     private readonly SynapseSettings _settings;
     private bool _loggedIn;
     private readonly Stream _memoryStream;
+    private readonly ILoggerFactory _loggerFactory;
 
     /// <summary>
     /// Initializes a new SynapseClient.
     /// </summary>
     /// <param name="settings">The settings.</param>
     /// <param name="logger">The logger</param>
-    public SynapseClient(SynapseSettings settings, ILogger<SynapseClient> logger, Stream stream = null) 
-        : this(settings.URL, logger, stream)
+    public SynapseClient(SynapseSettings settings, ILoggerFactory loggerFactory = null, Stream stream = null) 
+        : this(settings.URL, loggerFactory, stream)
     {
         _settings = settings;
     }
@@ -67,9 +69,14 @@ public class SynapseClient : IDisposable
     /// <param name="serverUrl">The url to connect to.</param>
     /// <param name="logger">The logger</param>
     /// <param name="stream"></param>
-    public SynapseClient(string serverUrl, ILogger<SynapseClient> logger, Stream stream = null)
+    public SynapseClient(string serverUrl, ILoggerFactory loggerFactory = null, Stream stream = null)
     {
-        _logger = logger;
+        if (loggerFactory == null)
+            _loggerFactory = LoggerFactory.Create(builder => builder.AddConsole());
+        else
+            _loggerFactory = loggerFactory;
+        _logger = (_loggerFactory ?? throw new InvalidOperationException()).CreateLogger<SynapseClient>();
+        
         _baseAddress = new Uri(serverUrl);
         _cookieContainer = new CookieContainer();
 
@@ -89,6 +96,7 @@ public class SynapseClient : IDisposable
             
         Layer = new LayerHelper(this);
         View = new ViewHelper(this);
+        Nodes = new NodeHelper(this, (_loggerFactory ?? throw new InvalidOperationException()).CreateLogger<NodeHelper>());
     }
 
     /// <summary>
@@ -254,7 +262,14 @@ public class SynapseClient : IDisposable
                 {
                     var messageType = token[0].Value<string>();
                     
-                    if (messageType == "init")
+                    if (messageType == "err")
+                    {
+                        _logger.LogTrace(token.ToString());
+                        var code = token["code"]?.Value<string>() ?? "";
+                        var mesg = token["mesg"]?.Value<string>() ?? "";
+                        throw new SynapseError(code, mesg);
+                    }
+                    else if (messageType == "init")
                     {
                         Init = token[1].ToObject<StormInitResponse>();
                     }
@@ -355,5 +370,6 @@ public class SynapseClient : IDisposable
         _client?.Dispose();
         Output?.Dispose();
         _memoryStream?.Dispose();
+        _loggerFactory?.Dispose();
     }
 }

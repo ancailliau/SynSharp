@@ -14,18 +14,33 @@
  * limitations under the License.
  */
 
-using Synsharp.Attribute;
-using Synsharp.Types;
+using System;
 
-namespace Synsharp.Forms;
+namespace Synsharp.Types;
 
-[SynapseForm("hash:md5")]
-public class HashMD5 : SynapseObject<Hex>
+public class Duration : SynapseType
 {
-      public static HashMD5 Parse(string str)
-      {
-          var hash = new HashMD5();
-          hash.SetValue(Hex.Parse(str));
-          return hash;
-      }
+    private TimeSpan _value;
+    private Duration(TimeSpan value)
+    {
+        _value = value;
+    }
+
+    public static implicit operator TimeSpan(Duration d) => d._value;
+    public static implicit operator Duration(TimeSpan d) => new Duration(d);
+
+    public override string ToString()
+    {
+        return _value.ToString();
+    }
+
+    public override string GetCoreValue()
+    {
+        return _value.ToString();
+    }
+
+    public static Duration Parse(string s)
+    {
+        return new Duration(TimeSpan.Parse(s));
+    }
 }

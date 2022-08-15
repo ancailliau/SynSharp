@@ -19,16 +19,24 @@ using Synsharp.Attribute;
 namespace Synsharp.Forms;
 
 [SynapseForm("inet:url")]
-public class InetUrl : SynapseObject<string>
+public class InetUrl : SynapseObject<Types.InetUrl>
 {
-    [SynapseProperty("fqdn")] public InetFqdn FQDN { get; set; }
-    [SynapseProperty("ipv4")] public InetIpV4 IpV4 { get; set; }
-    [SynapseProperty("ipv6")] public InetIpV6 IpV6 { get; set; }
-    [SynapseProperty("passwd")] public InetPasswd Passwd { get; set; }
-    [SynapseProperty("base")] public string Base { get; set; }
-    [SynapseProperty("path")] public string Path { get; set; }
-    [SynapseProperty("params")] public string Params { get; set; }
-    [SynapseProperty("port")] public InetPort Port { get; set; }
-    [SynapseProperty("proto")] public string Proto { get; set; }
-    [SynapseProperty("user")] public InetUser User { get; set; }
+    public InetUrl() : base()
+    {
+    }
+    public InetUrl(string str) : base()
+    {
+        SetValue(str);
+    }
+
+    [SynapseProperty("fqdn")] public Types.InetFqdn FQDN { get; set; }
+    [SynapseProperty("ipv4")] public Types.InetIPv4 IpV4 { get; set; }
+    [SynapseProperty("ipv6")] public Types.InetIPv6 IpV6 { get; set; }
+    [SynapseProperty("passwd")] public Types.InetPasswd Passwd { get; set; }
+    [SynapseProperty("base")] public Types.Str Base { get; set; }
+    [SynapseProperty("path")] public Types.Str Path { get; set; }
+    [SynapseProperty("params")] public Types.Str Params { get; set; }
+    [SynapseProperty("port")] public Types.InetPort Port { get; set; }
+    [SynapseProperty("proto")] public Types.Str Proto { get; set; }
+    [SynapseProperty("user")] public Types.InetUser User { get; set; }
 }

@@ -15,10 +15,11 @@
  */
 
 using Synsharp.Attribute;
+using Synsharp.Types;
 
 namespace Synsharp.Forms;
 
 [SynapseForm("iso:oid")]
-public class ISOOID : SynapseObject<string>
+public class ISOOID : SynapseObject<Str>
 {
 }

@@ -14,27 +14,12 @@
  * limitations under the License.
  */
 
-using System;
-using System.Net;
 using Synsharp.Attribute;
+using Synsharp.Types;
 
 namespace Synsharp.Forms;
 
 [SynapseForm("inet:fqdn")]
-public class InetFqdn : SynapseObject<string>
+public class InetFqdn : SynapseObject<Str>
 {
-}
-    
-[SynapseForm("inet:dns:a")]
-public class InetDnsA : SynapseObject<Tuple<string,IPAddress>>
-{
-    public InetDnsA()
-    {
-        AddNorm<object[]>(array =>
-        {
-            return new Tuple<string, IPAddress>(array[0].ToString(), IPAddress.Parse(array[1].ToString()));
-        });
-    }
-    [SynapseProperty("fqdn")] public InetFqdn FQDN { get; set; }
-    [SynapseProperty("ipv4")] public InetIpV4 IPv4 { get; set; }
 }

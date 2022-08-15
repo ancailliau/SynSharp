@@ -49,7 +49,7 @@ public class TestCustomObject : TestSynapse
             .ToListAsync();
         
         var references = await SynapseClient!
-            .StormAsync<InetIpV4>("_di:document=\"dil001\" <(refs)- inet:ipv4 ")
+            .StormAsync<InetIPv4>("_di:document=\"dil001\" <(refs)- inet:ipv4 ")
             .ToListAsync();
         foreach (var ipV4 in references)
         {

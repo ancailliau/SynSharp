@@ -14,43 +14,44 @@
  * limitations under the License.
  */
 
-using System;
-using System.Collections.Generic;
 using Synsharp.Attribute;
+using Synsharp.Types;
 
-namespace Synsharp.Forms;
-
-[SynapseForm("crypto:x509:cert")]
-public class CryptoX509Cert : SynapseObject<GUID>
+namespace Synsharp.Forms
 {
-    [SynapseProperty("file")] public FileBytes File { get; set; }
-    [SynapseProperty("subject")] public string Subject { get; set; }
-    [SynapseProperty("issuer")] public string Issuer { get; set; }
-    [SynapseProperty("issuer:cert")] public CryptoX509Cert IssuerCert { get; set; }
-    [SynapseProperty("serial")] public string Serial { get; set; }
-    [SynapseProperty("version")] public int Version { get; set; }
-    [SynapseProperty("validity:notbefore")] public DateTime NotBefore { get; set; }
-    [SynapseProperty("validity:notafter")] public DateTime NotAfter { get; set; }
+    [SynapseForm("crypto:x509:cert")]
+    public class CryptoX509Cert : SynapseObject<Synsharp.Types.CryptoX509Cert>
+    {
+        [SynapseProperty("file")] public Synsharp.Types.FileBytes File { get; set; }
+        [SynapseProperty("subject")] public Synsharp.Types.Str Subject { get; set; }
+        [SynapseProperty("issuer")] public Synsharp.Types.Str Issuer { get; set; }
+        [SynapseProperty("issuer:cert")] public Synsharp.Types.CryptoX509Cert IssuerCert { get; set; }
+        [SynapseProperty("serial")] public Synsharp.Types.Str Serial { get; set; }
+        [SynapseProperty("version")] public Synsharp.Types.Int Version { get; set; }
+        [SynapseProperty("validity:notbefore")] public Synsharp.Types.Time NotBefore { get; set; }
+        [SynapseProperty("validity:notafter")] public Synsharp.Types.Time NotAfter { get; set; }
         
-    [SynapseProperty("md5")] public HashMD5 MD5 { get; set; }
-    [SynapseProperty("sha1")] public HashSHA1 SHA1 { get; set; }
-    [SynapseProperty("sha256")] public HashSHA256 SHA256 { get; set; }
+        [SynapseProperty("md5")] public Synsharp.Types.HashMD5 MD5 { get; set; }
+        [SynapseProperty("sha1")] public Synsharp.Types.HashSHA1 SHA1 { get; set; }
+        [SynapseProperty("sha256")] public Synsharp.Types.HashSHA256 SHA256 { get; set; }
    
-    [SynapseProperty("rsa:key")] public RSAKey RSAKey { get; set; }
-    [SynapseProperty("algo")] public ISOOID Algo { get; set; }
+        [SynapseProperty("rsa:key")] public Synsharp.Types.RSAKey RSAKey { get; set; }
+        [SynapseProperty("algo")] public Synsharp.Types.ISOOID Algo { get; set; }
         
-    [SynapseProperty("signature")] public Hex Signature { get; set; }
-    [SynapseProperty("ext:sans")] public ISet<CryptoX509SAN> ExtSANs { get; set; }
+        [SynapseProperty("signature")] public Synsharp.Types.Hex Signature { get; set; }
+        [SynapseProperty("ext:sans")] public Synsharp.Types.Array<Synsharp.Types.CryptoX509SAN> ExtSANs { get; set; }
         
-    [SynapseProperty("ext:crls")] public ISet<CryptoX509CRL> ExtCRLs { get; set; }
-    [SynapseProperty("identities:fqdns")] public ISet<InetFqdn> IdentitiesFQDNs { get; set; }
-    [SynapseProperty("identities:emails")] public ISet<InetEmail> IdentitiesEmails { get; set; }
-    [SynapseProperty("identities:ipv4s")] public ISet<InetIpV4> IdentitiesIPv4s { get; set; }
-    [SynapseProperty("identities:ipv6s")] public ISet<InetIpV6> IdentitiesIPv6s { get; set; }
+        [SynapseProperty("ext:crls")] public Synsharp.Types.Array<Synsharp.Types.CryptoX509CRL> ExtCRLs { get; set; }
+        [SynapseProperty("identities:fqdns")] public Synsharp.Types.Array<Synsharp.Types.InetFqdn> IdentitiesFQDNs { get; set; }
+        [SynapseProperty("identities:emails")] public Synsharp.Types.Array<Synsharp.Types.InetEmail> IdentitiesEmails { get; set; }
+        [SynapseProperty("identities:ipv4s")] public Synsharp.Types.Array<Synsharp.Types.InetIPv4> IdentitiesIPv4s { get; set; }
+        [SynapseProperty("identities:ipv6s")] public Synsharp.Types.Array<Synsharp.Types.InetIPv6> IdentitiesIPv6s { get; set; }
 
-    [SynapseProperty("identities:urls")] public ISet<InetUrl> IdentitiesURLs { get; set; }
-    [SynapseProperty("crl:urls")] public ISet<InetUrl> CRLURLs { get; set; }
+        [SynapseProperty("identities:urls")] public Synsharp.Types.Array<Synsharp.Types.InetUrl> IdentitiesURLs { get; set; }
+        [SynapseProperty("crl:urls")] public Synsharp.Types.Array<Synsharp.Types.InetUrl> CRLURLs { get; set; }
         
-    [SynapseProperty("selfsigned")] public bool SelfSigned { get; set; }
+        [SynapseProperty("selfsigned")] public Synsharp.Types.Bool SelfSigned { get; set; }
 
+    }
 }
+

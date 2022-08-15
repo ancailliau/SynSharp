@@ -14,18 +14,33 @@
  * limitations under the License.
  */
 
-using Synsharp.Attribute;
-using Synsharp.Types;
+using System;
 
-namespace Synsharp.Forms;
+namespace Synsharp.Types;
 
-[SynapseForm("hash:md5")]
-public class HashMD5 : SynapseObject<Hex>
+public class InetAddr : SynapseType
 {
-      public static HashMD5 Parse(string str)
-      {
-          var hash = new HashMD5();
-          hash.SetValue(Hex.Parse(str));
-          return hash;
-      }
+    private Uri _value;
+    private InetAddr(Uri value)
+    {
+        _value = value;
+    }
+
+    public static implicit operator Uri(InetAddr d) => d._value;
+    public static implicit operator InetAddr(Uri d) => new InetAddr(d);
+
+    public override string ToString()
+    {
+        return _value.ToString();
+    }
+
+    public override string GetCoreValue()
+    {
+        return _value.ToString();
+    }
+
+    public static InetAddr Parse(string s)
+    {
+        return new InetAddr(new Uri(s));
+    }
 }

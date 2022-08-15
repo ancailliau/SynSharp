@@ -63,7 +63,7 @@ public class SynapseConverter
 
         return coreValue;
     }
-
+    
     private static object? GetInstance<T>(Type type, T coreValue, SynapseObjectMetaData meta = null)
     {
         Delegate constructorCallingLambda = null;
@@ -76,8 +76,16 @@ public class SynapseConverter
                 Array.Empty<Type>(),
                 Array.Empty<ParameterModifier>());
 
-            var expressionCall = Expression.New(constructor);
-            constructorCallingLambda = Expression.Lambda(expressionCall, null).Compile();
+            if (constructor != null)
+            {
+                var expressionCall = Expression.New(constructor);
+                constructorCallingLambda = Expression.Lambda(expressionCall, null).Compile();
+            }
+            else
+            {
+                throw new SynapseException($"The class '{type.FullName}' does not contain an empty constructor.");
+            }
+
             _instanceCreationMethods[type] = constructorCallingLambda;
         }
         else
@@ -110,7 +118,7 @@ public class SynapseConverter
 
     private static void SetValue<T>(Type type, T coreValue, object? instance)
     {
-        MethodInfo method = type.GetMethod(nameof(SynapseObject<T>.SetValue));
+        MethodInfo method = type.GetMethod("SetValue");
         if (method is not null)
         {
             MethodInfo generic = method.MakeGenericMethod(typeof(T));
@@ -122,11 +130,44 @@ public class SynapseConverter
  
     private static void SetMetadata(Type type, SynapseObjectMetaData? metaObj, object? i)
     {
+        EnsureFormPropertiesCached(type);
+            
+        foreach (var kv in metaObj.Tags)
+        {
+            ((SynapseObject)i).Tags.Add(kv.Key);
+        }
+            
+        foreach (var kv in metaObj.Props)
+        {
+            SetFormProperty(i, kv.Key, kv.Value);
+        }
+        
+        SetFormProperty(i, "iden", metaObj.Iden);
+
+        var pathContainer = metaObj.Path;
+        // TODO Path
+    }
+
+    public static void SetFormProperty(object? instance, string key, object value)
+    {
+        var type = instance.GetType();
+        if (_cachedField[type].ContainsKey(key))
+        {
+            var fieldInfo = _cachedField[type][key];
+            fieldInfo.SetValue(instance, Convert(value.GetType(), fieldInfo.FieldType, value));
+        } else if (_cachedProperty[type].ContainsKey(key))
+        {
+            var fieldInfo = _cachedProperty[type][key];
+            fieldInfo.SetValue(instance, Convert(value.GetType(), fieldInfo.PropertyType, value));
+        }
+    }
+
+    private static void EnsureFormPropertiesCached(Type type)
+    {
         if (!_cachedField.ContainsKey(type) & !_cachedProperty.ContainsKey(type))
         {
             _cachedField[type] = new();
-            var fields = type.GetFields(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic)
-                .Where(pi => pi.GetCustomAttributes(typeof(SynapsePropertyAttribute), false).Any());
+            var fields = GetFields(type);
             foreach (var field in fields)
             {
                 var attribute = field.GetCustomAttribute<SynapsePropertyAttribute>();
@@ -137,8 +178,7 @@ public class SynapseConverter
             }
 
             _cachedProperty[type] = new();
-            var properties = type.GetProperties(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic)
-                .Where(pi => pi.GetCustomAttributes(typeof(SynapsePropertyAttribute), false).Any());
+            var properties = GetProperties(type);
             foreach (var property in properties)
             {
                 var attribute = property.GetCustomAttribute<SynapsePropertyAttribute>();
@@ -148,49 +188,43 @@ public class SynapseConverter
                 }
             }
         }
-            
-        foreach (var kv in metaObj.Tags)
-        {
-            ((SynapseObject)i).Tags.Add(kv.Key);
-        }
-            
-        foreach (var kv in metaObj.Props)
-        {
-            if (_cachedField[type].ContainsKey(kv.Key))
-            {
-                var fieldInfo = _cachedField[type][kv.Key];
-                fieldInfo.SetValue(i, Convert(kv.Value.GetType(), fieldInfo.FieldType, kv.Value));
-            } else if (_cachedProperty[type].ContainsKey(kv.Key))
-            {
-                var fieldInfo = _cachedProperty[type][kv.Key];
-                fieldInfo.SetValue(i, Convert(kv.Value.GetType(), fieldInfo.PropertyType, kv.Value));
-            }
-        }
+    }
 
-        // Set the iden value
-        if (_cachedField[type].ContainsKey("iden"))
-        {
-            var fieldInfo = _cachedField[type]["iden"];
-            fieldInfo.SetValue(i, metaObj.Iden);
-        }
-        else if (_cachedProperty[type].ContainsKey("iden"))
-        {
-            var propertyInfo = _cachedProperty[type]["iden"];
-            propertyInfo.SetValue(i, metaObj.Iden);
-        }
+    public static IEnumerable<FieldInfo> GetFields(Type type)
+    {
+        return type.GetFields(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic)
+            .Where(pi => pi.GetCustomAttributes(typeof(SynapsePropertyAttribute), false).Any());
+    }
 
-        var pathContainer = metaObj.Path;
-        // TODO Path
+    public static IEnumerable<PropertyInfo> GetProperties(Type type)
+    {
+        return type.GetProperties(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic)
+            .Where(pi => pi.GetCustomAttributes(typeof(SynapsePropertyAttribute), false).Any());
     }
 
     private static object? Convert(Type from, Type to, object value)
     {
         if (to == from)
             return value;
-            
-        if (to == typeof(DateTime))
+
+        if (to.IsSubclassOf(typeof(SynapseType)))
         {
-            if (from == typeof(Int64))
+            MethodInfo method = to.GetMethod("Convert", BindingFlags.Public | BindingFlags.Static);
+            if (method is not null)
+            {
+                return method.Invoke(null, new object[]{ value });
+            }
+            else
+                throw new Exception($"Type '{to.FullName}' does not contain a public static method 'Convert'.");
+        }
+        else if (to.IsSubclassOf(typeof(SynapseObject)))
+        {
+            return GetInstance(to, value.ToString());
+        }
+        
+        /*
+         * 
+        if (from == typeof(Int64))
             {
                 return DateTimeOffset.FromUnixTimeMilliseconds((Int64) value).UtcDateTime;
             }
@@ -211,11 +245,13 @@ public class SynapseConverter
         {
             return System.Convert.ToInt32(value);
         }
-        else if (to.IsSubclassOf(typeof(SynapseObject)))
+        else if (to == typeof(bool))
         {
-            return GetInstance(to, value.ToString());
+            return System.Convert.ToBoolean(value);
         }
+         */
             
         throw new NotImplementedException($"Cannot convert from '{from.FullName}' to '{to.FullName}'");
     }
+
 }

@@ -14,15 +14,31 @@
  * limitations under the License.
  */
 
-using System.Net;
-using Synsharp.Attribute;
+namespace Synsharp.Types;
 
-namespace Synsharp.Forms;
-
-[SynapseForm("inet:ipv6")]
-public class InetIpV6 : SynapseObject<IPAddress>
+public class Float : SynapseType
 {
-    public InetIpV6() : base()
+    private float _value;
+    private Float(float value)
     {
+        _value = value;
+    }
+
+    public static implicit operator float(Float d) => d._value;
+    public static implicit operator Float(float d) => new Float(d);
+
+    public override string ToString()
+    {
+        return _value.ToString();
+    }
+
+    public override string GetCoreValue()
+    {
+        return _value.ToString();
+    }
+
+    public static Float Parse(string s)
+    {
+        return new Float(float.Parse(s));
     }
 }

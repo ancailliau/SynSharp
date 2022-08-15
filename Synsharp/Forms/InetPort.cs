@@ -15,10 +15,11 @@
  */
 
 using Synsharp.Attribute;
+using Synsharp.Types;
 
 namespace Synsharp.Forms;
 
 [SynapseForm("inet:port")]
-public class InetPort : SynapseObject<int>
+public class InetPort : SynapseObject<Int>
 {
 }

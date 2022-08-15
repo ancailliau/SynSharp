@@ -2,40 +2,17 @@
 
 A C# client for [Vertex Synapse](https://github.com/vertexproject/synapse). 
 
-Currently, only a limited subset of node types is supported:
-
-* CryptoX509CRL
-* CryptoX509Cert
-* CryptoX509SAN
-* FileBytes
-* GUID
-* HashMD5
-* HashSHA1
-* HashSHA256
-* Hex
-* ISOOID
-* InetEmail
-* InetFqdn
-* InetIpV4
-* InetIpV6
-* InetPasswd
-* InetPort
-* InetUrl
-* InetUser
-* RSAKey
+Currently, only a limited subset of node forms and types is supported. See
+[https://github.com/ancailliau/SynSharp/tree/master/Synsharp/Forms](https://github.com/ancailliau/SynSharp/tree/master/Synsharp/Forms)
+and 
+[https://github.com/ancailliau/SynSharp/tree/master/Synsharp/Types](https://github.com/ancailliau/SynSharp/tree/master/Synsharp/Types)
+for the complete up-to-date list.
 
 ## Examples
 
 Connect to a server
 
-	using var loggerFactory = LoggerFactory.Create(builder =>
-	{
-		builder.SetMinimumLevel(LogLevel.Trace);
-		builder.AddConsole(options => options.DisableColors = true);
-	});
-	var logger = loggerFactory.CreateLogger<SynapseClient>();
-	    
-	SynapseClient = new SynapseClient("https://localhost:8901", logger);
+	SynapseClient = new SynapseClient("https://localhost:8901");
 	await SynapseClient.LoginAsync("root", "secret");
 
 Executes a Storm query to retreive all IPv6 addresses.
@@ -45,11 +22,20 @@ Executes a Storm query to retreive all IPv6 addresses.
 		Console.WriteLine(item);
 	}
 
+To add a new IPv6 addresses.
+
+    var response = await SynapseClient
+                .Nodes.Add(InetIpV6.Parse("2001:0db8:85a3:0000:0000:8a2e:0370:7334"));
+
 ## Running the tests
 
 Running the tests requires Docker, but can be run with the following command:
 
 	 dotnet test
+     
+To run a specific test with the detailed output:
+
+     dotnet test -l "console;verbosity=detailed" --filter 'TestGetIPv6'
 
 ## Licence
 

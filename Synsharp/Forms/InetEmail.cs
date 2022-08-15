@@ -15,14 +15,22 @@
  */
 
 using Synsharp.Attribute;
+using Synsharp.Types;
 
 namespace Synsharp.Forms;
 
 [SynapseForm("inet:email")]
-public class InetEmail : SynapseObject<string>
+public class InetEmail : SynapseObject<Synsharp.Types.InetEmail>
 {
-    [SynapseProperty("user")]
-    public InetUser User { get; private set; }
-    [SynapseProperty("fqdn")]
-    public InetFqdn FQDN { get; private set; }
+    public InetEmail()
+    {
+    }
+    
+    public InetEmail(string str)
+    {
+        SetValue(str);
+    }
+
+    [SynapseProperty("user")] public Types.InetUser User { get; private set; }
+    [SynapseProperty("fqdn")] public Types.InetFqdn FQDN { get; private set; }
 }

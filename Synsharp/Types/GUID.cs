@@ -14,12 +14,30 @@
  * limitations under the License.
  */
 
-namespace Synsharp.Forms;
+namespace Synsharp.Types;
 
-public class GUID
+public class GUID : SynapseType
 {
+    protected bool Equals(GUID other)
+    {
+        return _value == other._value;
+    }
+
+    public override bool Equals(object obj)
+    {
+        if (ReferenceEquals(null, obj)) return false;
+        if (ReferenceEquals(this, obj)) return true;
+        if (obj.GetType() != this.GetType()) return false;
+        return Equals((GUID)obj);
+    }
+
+    public override int GetHashCode()
+    {
+        return (_value != null ? _value.GetHashCode() : 0);
+    }
+
     private string _value;
-    private GUID(string value)
+    protected GUID(string value)
     {
         _value = value;
     }
@@ -31,7 +49,12 @@ public class GUID
     {
         return _value;
     }
-    
+
+    public override string GetCoreValue()
+    {
+        return "*";
+    }
+
     public static GUID Parse(string s)
     {
         return new GUID(s);

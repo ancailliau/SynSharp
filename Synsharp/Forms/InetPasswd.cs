@@ -15,10 +15,11 @@
  */
 
 using Synsharp.Attribute;
+using Synsharp.Types;
 
 namespace Synsharp.Forms;
 
 [SynapseForm("inet:passwd")]
-public class InetPasswd : SynapseObject<string>
+public class InetPasswd : SynapseObject<Str>
 {
 }

@@ -14,18 +14,23 @@
  * limitations under the License.
  */
 
+using System.Net;
 using Synsharp.Attribute;
 using Synsharp.Types;
 
 namespace Synsharp.Forms;
 
-[SynapseForm("hash:md5")]
-public class HashMD5 : SynapseObject<Hex>
+[SynapseForm("inet:ipv6")]
+public class InetIPv6 : SynapseObject<Types.InetIPv6>
 {
-      public static HashMD5 Parse(string str)
-      {
-          var hash = new HashMD5();
-          hash.SetValue(Hex.Parse(str));
-          return hash;
-      }
+    public InetIPv6() : base()
+    {
+    }
+
+    public static InetIPv6 Parse(string str)
+    {
+        var address = new InetIPv6();
+        address.SetValue(str);
+        return address;
+    }
 }

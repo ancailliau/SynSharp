@@ -29,9 +29,8 @@ public abstract class TestSynapse
             builder.SetMinimumLevel(LogLevel.Trace);
             builder.AddConsole(options => options.DisableColors = true);
         });
-        var logger = loggerFactory.CreateLogger<SynapseClient>();
         
-        SynapseClient = new SynapseClient("https://localhost:8901", logger);
+        SynapseClient = new SynapseClient("https://localhost:8901", loggerFactory);
         await SynapseClient.LoginAsync("root", "secret");
     }
 

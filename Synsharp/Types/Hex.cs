@@ -14,12 +14,33 @@
  * limitations under the License.
  */
 
-namespace Synsharp.Forms;
+using System;
 
-public class Hex
+namespace Synsharp.Types;
+
+public class Hex : SynapseType
 {
-    private string _value;
-    private Hex(string value)
+    protected bool Equals(Hex other)
+    {
+        return _value == other._value;
+    }
+
+    public override bool Equals(object obj)
+    {
+        if (ReferenceEquals(null, obj)) return false;
+        if (ReferenceEquals(this, obj)) return true;
+        if (obj.GetType() != this.GetType()) return false;
+        return Equals((Hex)obj);
+    }
+
+    public override int GetHashCode()
+    {
+        return (_value != null ? _value.GetHashCode() : 0);
+    }
+
+    protected string _value;
+
+    protected Hex(string value)
     {
         _value = value;
     }
@@ -32,8 +53,21 @@ public class Hex
         return _value;
     }
 
+    public override string GetCoreValue()
+    {
+        return _value;
+    }
+
     public static Hex Parse(string s)
     {
         return new Hex(s);
+    }
+    
+    public static Hex Convert(object o)
+    {
+        if (o is string str)
+            return Parse(str);
+
+        throw new NotImplementedException($"Cannot convert from '{o.GetType().FullName}' to '{typeof(Hex).FullName}'");
     }
 }

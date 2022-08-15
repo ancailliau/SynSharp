@@ -18,7 +18,7 @@ public class TestTag : TestSynapse
         await SynapseClient.StormCallAsync("[ inet:ipv4=8.8.8.8 +#google ]");
         
         // Check for the tag
-        var documents = await SynapseClient.StormAsync<InetIpV4>("inet:ipv4=8.8.8.8").ToListAsync();
+        var documents = await SynapseClient.StormAsync<InetIPv4>("inet:ipv4=8.8.8.8").ToListAsync();
         Assert.That(documents.First().Tags.Any(t => t == "google"));
     }
 }

@@ -15,10 +15,11 @@
  */
 
 using Synsharp.Attribute;
+using Synsharp.Types;
 
 namespace Synsharp.Forms;
 
 [SynapseForm("crypto:x509:crl")]
-public class CryptoX509CRL : SynapseObject<string>
+public class CryptoX509CRL : SynapseObject<Str>
 {
 }

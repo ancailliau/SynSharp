@@ -15,11 +15,12 @@
  */
 
 using Synsharp.Attribute;
+using Synsharp.Types;
 
 namespace Synsharp.Forms;
 
 [SynapseForm("rsa:key")]
-public class RSAKey : SynapseObject
+public class RSAKey : SynapseObject<GUID>
 {
     [SynapseProperty("mod")] public Hex Mod { get; set; }
     [SynapseProperty("pub:exp")] public int PubExp { get; set; }

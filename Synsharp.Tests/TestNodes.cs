@@ -14,14 +14,14 @@ public class TestNodes : TestSynapse
         Assert.NotNull(SynapseClient);
         
         var response = await SynapseClient
-            .StormAsync<InetIpV6>("[ inet:ipv6=2001:0db8:85a3:0000:0000:8a2e:0370:7334 ]")
+            .StormAsync<InetIPv6>("[ inet:ipv6=2001:0db8:85a3:0000:0000:8a2e:0370:7334 ]")
             .ToListAsync();
         
         Assert.AreEqual(1, response.Count());
 
         var first = response.Single();
         Assert.IsNotNull(first);
-        Assert.That(first.Equals(IPAddress.Parse("2001:0db8:85a3:0000:0000:8a2e:0370:7334")));
+        Assert.That(first.Equals(InetIPv6.Parse("2001:0db8:85a3:0000:0000:8a2e:0370:7334")));
     }
     
     [Test]
@@ -30,11 +30,11 @@ public class TestNodes : TestSynapse
         Assert.NotNull(SynapseClient);
         
         _ = await SynapseClient
-            .StormAsync<InetIpV6>("[ inet:ipv6=2001:0db8:85a3:0000:0000:8a2e:0370:7334 ]")
+            .StormAsync<InetIPv6>("[ inet:ipv6=2001:0db8:85a3:0000:0000:8a2e:0370:7334 ]")
             .ToListAsync();
         
-        var response = await SynapseClient.StormAsync<InetIpV6>("inet:ipv6=2001:0db8:85a3:0000:0000:8a2e:0370:7334").ToListAsync();
-        Assert.That(response.First().Equals(IPAddress.Parse("2001:0db8:85a3:0000:0000:8a2e:0370:7334")));
+        var response = await SynapseClient.StormAsync<InetIPv6>("inet:ipv6=2001:0db8:85a3:0000:0000:8a2e:0370:7334").ToListAsync();
+        Assert.That(response.First().Equals(InetIPv6.Parse("2001:0db8:85a3:0000:0000:8a2e:0370:7334")));
     }
 
     [Test]
@@ -43,14 +43,14 @@ public class TestNodes : TestSynapse
         Assert.NotNull(SynapseClient);
         
         var response = await SynapseClient
-            .StormAsync<InetIpV4>("[ inet:ipv4=8.8.8.8 ]")
+            .StormAsync<InetIPv4>("[ inet:ipv4=8.8.8.8 ]")
             .ToListAsync();
         
         Assert.AreEqual(1, response.Count());
 
         var first = response.Single();
         Assert.IsNotNull(first);
-        Assert.That(first.Equals(IPAddress.Parse("8.8.8.8")));
+        Assert.That(first.Equals(InetIPv4.Parse("8.8.8.8")));
     }
     
     [Test]
@@ -66,8 +66,8 @@ public class TestNodes : TestSynapse
 
         var first = response.Single();
         Assert.IsNotNull(first);
-        Assert.That(first.Base.Equals("http://www.example.org/files/index.html"));
-        Assert.That(first.FQDN.Equals("www.example.org"));
+        Assert.That(first.Base.Equals(Types.Str.Parse("http://www.example.org/files/index.html")), $"Expected 'http://www.example.org/files/index.html' but got '{first.Base}' "); 
+        Assert.That(first.FQDN.Equals(Types.InetFqdn.Parse("www.example.org")), $"Expected 'www.example.org' but got '{first.FQDN}' ");
     }
 
     [Test]
@@ -87,10 +87,10 @@ public class TestNodes : TestSynapse
 
         var first = response.Single();
         Assert.IsNotNull(first);
-        Assert.That(first.FQDN.Equals("www.example.org"));
-        Assert.That(first.User.Equals("john.doe"));
-        Assert.That(first.Passwd.Equals("evil"));
-        Assert.That(first.Port.Equals(1234));
+        Assert.That(first.FQDN.Equals(Types.InetFqdn.Convert("www.example.org")), $"Expected 'www.example.org' but got '{first.FQDN}' ");
+        Assert.That(first.User.Equals(Types.InetUser.Convert("john.doe")), $"Expected 'john.doe' but got '{first.User}' ");
+        Assert.That(first.Passwd.Equals(Types.InetPasswd.Convert("evil")), $"Expected 'evil' but got '{first.Passwd}' ");
+        Assert.That(first.Port.Equals(Types.InetPort.Convert(1234)), $"Expected '1234' but got '{first.Port}' ");
     }
 
     [Test]
@@ -106,8 +106,8 @@ public class TestNodes : TestSynapse
 
         var first = response.Single();
         Assert.IsNotNull(first);
-        Assert.That(first.FQDN.Equals("example.org"));
-        Assert.That(first.User.Equals("john.doe"));
+        Assert.That(first.FQDN.Equals(Types.InetFqdn.Convert("example.org")), $"Expected 'example.org' but got '{first.FQDN}' ");
+        Assert.That(first.User.Equals(Types.InetUser.Convert("john.doe")), $"Expected 'john.doe' but got '{first.User}' ");
     }
 
     [Test]
@@ -122,6 +122,6 @@ public class TestNodes : TestSynapse
         Assert.AreEqual(1, response.Count());
         var first = response.Single();
         Assert.IsNotNull(first);
-        Assert.AreEqual("ebff56c59290e26d64050e0b68ec6575", first.MD5.Value.ToString());
+        Assert.AreEqual("ebff56c59290e26d64050e0b68ec6575", first.MD5.ToString());
     }
 }

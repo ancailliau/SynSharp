@@ -14,8 +14,10 @@
  * limitations under the License.
  */
 
+using Synsharp.Types;
+
 namespace Synsharp.Forms;
 
-public class FileBytes : SynapseObject
+public class FileBytes : SynapseObject<GUID>
 {
 }
