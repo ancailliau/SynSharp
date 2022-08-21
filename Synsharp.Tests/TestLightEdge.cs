@@ -14,8 +14,8 @@ public class TestLightEdge : TestSynapse
         var ip1 = new InetIPv4("8.8.8.8");
         var ip2 = new InetIPv4("9.9.9.9");
 
-        ip1 = await SynapseClient.Nodes.Add<InetIPv4,Types.InetIPv4>(ip1);
-        ip2 = await SynapseClient.Nodes.Add<InetIPv4,Types.InetIPv4>(ip2);
+        ip1 = await SynapseClient.Nodes.Add<InetIPv4>(ip1);
+        ip2 = await SynapseClient.Nodes.Add<InetIPv4>(ip2);
         await SynapseClient.Nodes.AddLightEdge(ip1, ip2, "refs");
 
         var relatedIps = await (SynapseClient.StormAsync<object>("inet:ipv4=8.8.8.8 <(refs)- *")).ToListAsync();

@@ -15,6 +15,7 @@
  */
 
 using System;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 
 namespace Synsharp.Helpers;
@@ -49,7 +50,7 @@ public class ViewHelper
             setName = $"$view.set(name, {name.Escape()})";
         }
         
-        return await _client.StormCallAsync<SynapseView>($"$view=$lib.view.get({iden}).fork() {setName} return($view)");
+        return await _client.StormCallAsync<SynapseView>($"$view=$lib.view.get({iden}).fork({name.Escape()}) return($view)");
     }
     
     /// <summary>
@@ -81,5 +82,18 @@ public class ViewHelper
             throw new ArgumentException("You must provide a valid view identifier.");
         
         await _client.StormCallAsync($"$lib.view.del({iden})");
+    }
+
+    public IAsyncEnumerable<T> Execute<T>(string iden, string query)
+    {
+        if (string.IsNullOrEmpty(iden))
+            throw new ArgumentException("You must provide a valid view identifier.");
+        return _client.StormAsync<T>($"view.exec {iden} {{ {query} }}");
+    }
+
+    public object Merge(string iden)
+    {
+        var command = $"$view = $lib.view.get({iden}) $view.merge()";
+        return _client.StormCallAsync(command);
     }
 }

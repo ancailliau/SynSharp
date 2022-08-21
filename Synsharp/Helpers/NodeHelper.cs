@@ -36,13 +36,27 @@ public class NodeHelper
         _logger = logger;
     }
 
-    public async Task<T> Add<T,TS>(T synapseObject) where T: SynapseObject<TS> where TS: SynapseType
+    public async Task<T> Add<T>(T synapseObject) where T : SynapseObject
     {
+        var synapseCoreType = synapseObject.GetType();
+        if (synapseCoreType.IsSubclassOf(typeof(SynapseObject<>)))
+        {
+            throw new SynapseException("Cannot add an object that is not 'SynapseObject<>' with node helper.");
+        }
+
         // Get the core value to assign (i.e. all but GUID)
         string value = "*";
-        if (synapseObject.Value != null) 
-            value = synapseObject.Value.GetCoreValue();
-
+        var coreValue = (
+                synapseCoreType.GetProperty("Value")
+                ?? throw new SynapseException($"Property 'Value' not found on '{synapseCoreType.FullName}'")
+            ).GetValue(synapseObject);
+        if (coreValue != null)
+        {
+            var mi = coreValue.GetType().GetMethod("GetCoreValue")
+                     ?? throw new SynapseException($"Method 'GetCoreValue' not found on '{coreValue.GetType().FullName}'");
+            value = (string)mi.Invoke(coreValue, null); // synapseObject.Value.GetCoreValue()
+        }
+        
         if (string.IsNullOrEmpty(value))
         {
             throw new SynapseException($"Invalid core value for '{synapseObject.GetType().FullName}'");   

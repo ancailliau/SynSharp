@@ -16,7 +16,7 @@ public class TestNodeHelper : TestSynapse
         Assert.NotNull(SynapseClient);
 
         var response = await SynapseClient
-            .Nodes.Add<InetIPv6,Types.InetIPv6>(InetIPv6.Parse("2001:0db8:85a3:0000:0000:8a2e:0370:7334"));
+            .Nodes.Add(InetIPv6.Parse("2001:0db8:85a3:0000:0000:8a2e:0370:7334"));
         
         Assert.IsNotNull(response);
         Assert.That(response.Equals(InetIPv6.Parse("2001:0db8:85a3:0000:0000:8a2e:0370:7334")));
@@ -30,7 +30,7 @@ public class TestNodeHelper : TestSynapse
         var cert = new CryptoX509Cert();
         cert.MD5 = "ebff56c59290e26d64050e0b68ec6575";
         
-        var response = (CryptoX509Cert) await SynapseClient.Nodes.Add<CryptoX509Cert,Types.CryptoX509Cert>(cert);
+        var response = (CryptoX509Cert) await SynapseClient.Nodes.Add(cert);
         
         Assert.IsNotNull(response);
         Assert.AreEqual("ebff56c59290e26d64050e0b68ec6575", response.MD5.ToString());
