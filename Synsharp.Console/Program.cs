@@ -1,6 +1,8 @@
 ﻿using Spectre.Console;
 using Spectre.Console.Cli;
 
+namespace Synsharp.Console;
+
 public static class Program
 {
     public static int Main(string[] args)
