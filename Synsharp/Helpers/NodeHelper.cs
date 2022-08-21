@@ -38,29 +38,7 @@ public class NodeHelper
 
     public async Task<T> Add<T>(T synapseObject) where T : SynapseObject
     {
-        var synapseCoreType = synapseObject.GetType();
-        if (synapseCoreType.IsSubclassOf(typeof(SynapseObject<>)))
-        {
-            throw new SynapseException("Cannot add an object that is not 'SynapseObject<>' with node helper.");
-        }
-
-        // Get the core value to assign (i.e. all but GUID)
-        string value = "*";
-        var coreValue = (
-                synapseCoreType.GetProperty("Value")
-                ?? throw new SynapseException($"Property 'Value' not found on '{synapseCoreType.FullName}'")
-            ).GetValue(synapseObject);
-        if (coreValue != null)
-        {
-            var mi = coreValue.GetType().GetMethod("GetCoreValue")
-                     ?? throw new SynapseException($"Method 'GetCoreValue' not found on '{coreValue.GetType().FullName}'");
-            value = (string)mi.Invoke(coreValue, null); // synapseObject.Value.GetCoreValue()
-        }
-        
-        if (string.IsNullOrEmpty(value))
-        {
-            throw new SynapseException($"Invalid core value for '{synapseObject.GetType().FullName}'");   
-        }
+        var value = GetCoreValueDynamic(synapseObject);
 
         var propertyDict = new Dictionary<string, string>();
         
@@ -122,7 +100,36 @@ public class NodeHelper
         }
     }
 
-    private (string type, string value) GetSelector<T>(SynapseObject<T> @object) where T: SynapseType
+    private static string GetCoreValueDynamic<T>(T synapseObject) where T : SynapseObject
+    {
+        var synapseCoreType = synapseObject.GetType();
+        if (synapseCoreType.IsSubclassOf(typeof(SynapseObject<>)))
+        {
+            throw new SynapseException("Cannot add an object that is not 'SynapseObject<>' with node helper.");
+        }
+
+        // Get the core value to assign (i.e. all but GUID)
+        string value = "*";
+        var coreValue = (
+            synapseCoreType.GetProperty("Value")
+            ?? throw new SynapseException($"Property 'Value' not found on '{synapseCoreType.FullName}'")
+        ).GetValue(synapseObject);
+        if (coreValue != null)
+        {
+            var mi = coreValue.GetType().GetMethod("GetCoreValue")
+                     ?? throw new SynapseException($"Method 'GetCoreValue' not found on '{coreValue.GetType().FullName}'");
+            value = (string)mi.Invoke(coreValue, null); // synapseObject.Value.GetCoreValue()
+        }
+
+        if (string.IsNullOrEmpty(value))
+        {
+            throw new SynapseException($"Invalid core value for '{synapseObject.GetType().FullName}'");
+        }
+
+        return value;
+    }
+
+    private (string type, string value) GetSelector(SynapseObject @object)
     {
         var type = default(string);
         var attribute = @object.GetType().GetCustomAttribute<SynapseFormAttribute>();
@@ -133,7 +140,7 @@ public class NodeHelper
             throw new SynapseException($"Missing SynapseFormAttribute on class '{@object.GetType().FullName}'");   
         }
         
-        var val = @object.Value.GetCoreValue();
+        var val = GetCoreValueDynamic(@object);
         if (string.IsNullOrEmpty(val))
         {
             throw new SynapseException($"Invalid core value for '{@object.GetType().FullName}'");   
@@ -142,7 +149,7 @@ public class NodeHelper
         return (type, val);
     }
 
-    public async Task AddLightEdge<T1,T2>(SynapseObject<T1> o1, SynapseObject<T2> o2, string @ref) where T1: SynapseType where T2: SynapseType
+    public async Task AddLightEdge(SynapseObject o1, SynapseObject o2, string @ref)
     {
         var (t1, v1) = GetSelector(o1);
         var (t2, v2) = GetSelector(o2);
