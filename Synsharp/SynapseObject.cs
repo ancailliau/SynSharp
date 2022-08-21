@@ -32,7 +32,7 @@ namespace Synsharp;
 public abstract class SynapseObject
 {
     [SynapseProperty(".created")] protected Time Created { set; get; }
-    [SynapseProperty("iden")] protected string Iden { set; get; }
+    [SynapseProperty("iden")] protected Str Iden { set; get; }
 
     public HashSet<string> Tags { get; set; } = new();
 

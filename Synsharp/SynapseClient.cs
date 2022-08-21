@@ -39,8 +39,8 @@ public class SynapseClient : IDisposable
     public ViewHelper View { get; }
     public NodeHelper Nodes { get; set; }
     
-    public StormInitResponse? Init { private get; set; }
-    public StormFiniResponse? Fini { private get; set; }
+    public StormInitResponse? Init { get; set; }
+    public StormFiniResponse? Fini { get; set; }
     public TextWriter Output { private get; set; }
 
     private readonly HttpClient _client;
@@ -264,9 +264,11 @@ public class SynapseClient : IDisposable
                     
                     if (messageType == "err")
                     {
+                        var element = token[1] as JArray;
                         _logger.LogTrace(token.ToString());
-                        var code = token["code"]?.Value<string>() ?? "";
-                        var mesg = token["mesg"]?.Value<string>() ?? "";
+                        var code = element[0]?.Value<string>() ?? "";
+                        _logger.LogTrace(element[1].GetType().FullName);
+                        var mesg = ((JObject)element[1])["mesg"]?.Value<string>() ?? "";
                         throw new SynapseError(code, mesg);
                     }
                     else if (messageType == "init")

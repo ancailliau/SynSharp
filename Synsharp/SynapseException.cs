@@ -21,7 +21,7 @@ namespace Synsharp;
 /// <summary>
 /// Represents an exception preventing the correct execution of the client. 
 /// </summary>
-internal class SynapseException : Exception
+public class SynapseException : Exception
 {
     public SynapseException(string message) : base(message)
     {

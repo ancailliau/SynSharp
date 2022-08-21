@@ -21,7 +21,7 @@ namespace Synsharp;
 /// <summary>
 /// Represents an error, as returned by a synapse server.
 /// </summary>
-internal class SynapseError : Exception
+public class SynapseError : Exception
 {
     /// <summary>
     /// Initializes a SynapseError instance.

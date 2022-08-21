@@ -36,12 +36,12 @@ public class NodeHelper
         _logger = logger;
     }
 
-    public async Task<SynapseObject<T>> Add<T>(SynapseObject<T> synapseObject) where T: SynapseType
+    public async Task<T> Add<T,TS>(T synapseObject) where T: SynapseObject<TS> where TS: SynapseType
     {
         // Get the core value to assign (i.e. all but GUID)
         string value = "*";
         if (synapseObject.Value != null) 
-            value = ToSafeStormValue(synapseObject.Value);
+            value = synapseObject.Value.GetCoreValue();
 
         if (string.IsNullOrEmpty(value))
         {
@@ -58,8 +58,15 @@ public class NodeHelper
             if (propertyAttribute != null && !propertyAttribute.Name.StartsWith("."))
             {
                 var val = field.GetValue(synapseObject);
-                if (val != null) 
-                    propertyDict.Add(propertyAttribute.Name, ToSafeStormValue(val));
+                if (val != null && val is SynapseType sval)
+                {
+                    _logger.LogTrace($"Convert value for '{propertyAttribute.Name}': '{val.ToString()}'");
+                    propertyDict.Add(propertyAttribute.Name, sval.GetCoreValue());
+                }
+                else
+                {
+                    throw new SynapseException($"The property '{field.Name}' has no value or value is not a SynapseType.");
+                }
             }
         }
         
@@ -72,8 +79,15 @@ public class NodeHelper
                 var val = propertyInfo.GetValue(synapseObject);
                 if (val != null)
                 {
-                    _logger.LogTrace($"Convert value for '{propertyAttribute.Name}': '{val.ToString()}'");
-                    propertyDict.Add(propertyAttribute.Name, ToSafeStormValue(val));
+                    if (val is SynapseType sval)
+                    {
+                        _logger.LogTrace($"Convert value for '{propertyAttribute.Name}': '{val.ToString()}'");
+                        propertyDict.Add(propertyAttribute.Name, sval.GetCoreValue());
+                    }
+                    else
+                    {
+                        throw new SynapseException($"The property '{propertyInfo.Name}' has no value or value is not a SynapseType.");
+                    }
                 }
             }
         }
@@ -85,8 +99,8 @@ public class NodeHelper
             var type = attribute.Name;
             var attributes = string.Join(" ", propertyDict.Select(_ => $":{_.Key}={_.Value}"));
             var command = $"[ {type}={value} {attributes} ]";
-            var results = await _synapseClient.StormAsync<SynapseObject<T>>(command).ToListAsync();
-            return (SynapseObject<T>)(object)results.FirstOrDefault();
+            var results = await _synapseClient.StormAsync<T>(command).ToListAsync();
+            return results.FirstOrDefault();
         }
         else
         {
@@ -94,46 +108,32 @@ public class NodeHelper
         }
     }
 
-    private static string ToSafeStormValue(object val)
+    private (string type, string value) GetSelector<T>(SynapseObject<T> @object) where T: SynapseType
     {
-        // TODO Refactor to avoid code duplicates with GetCoreValue in SynapseObject
-        if (val == null) throw new ArgumentNullException(nameof(val));
+        var type = default(string);
+        var attribute = @object.GetType().GetCustomAttribute<SynapseFormAttribute>();
+        if (attribute != null)
+        {
+            type = attribute.Name;
+        } else {
+            throw new SynapseException($"Missing SynapseFormAttribute on class '{@object.GetType().FullName}'");   
+        }
         
-        string value = string.Empty;
-        if (val is string s)
+        var val = @object.Value.GetCoreValue();
+        if (string.IsNullOrEmpty(val))
         {
-            value = s.Escape();
+            throw new SynapseException($"Invalid core value for '{@object.GetType().FullName}'");   
         }
-        else if (val is IPAddress a)
-        {
-            value = a.ToString();
-        }
-        else if (val is Int32 i)
-        {
-            value = i.ToString();
-        }
-        else if (val is bool b)
-        {
-            value = b.ToString();
-        }
-        else if (val is SynapseType st)
-        {
-            value = st.GetCoreValue();
-        }
-        else if (val is SynapseObject so)
-        {
-            value = so.GetCoreValue();
-        }
-        else
-        {
-            throw new System.NotImplementedException($"Value of type '{val.GetType()}' could not be converted.");
-        }
-
-        return value;
+        
+        return (type, val);
     }
 
-    public async Task AddLightEdge(SynapseObject o1, SynapseObject o2, string @ref)
+    public async Task AddLightEdge<T1,T2>(SynapseObject<T1> o1, SynapseObject<T2> o2, string @ref) where T1: SynapseType where T2: SynapseType
     {
-        throw new System.NotImplementedException();
+        var (t1, v1) = GetSelector(o1);
+        var (t2, v2) = GetSelector(o2);
+
+        var command = $"{t1}={v1} [ <({@ref})+ {{ {t2}={v2} }} ]";
+        _ = await _synapseClient.StormAsync<object>(command).ToListAsync();
     }
 }
