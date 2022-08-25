@@ -55,16 +55,16 @@ public class TestView : TestSynapse
         Assert.NotNull(view);
         Assert.NotNull(view2);
 
-        var results = await (SynapseClient.View.Execute<SynapseObject>(view.Iden, "[ inet:ipv4=8.8.8.8 ]")).ToListAsync();
+        var results = await (SynapseClient.StormAsync<SynapseObject>("[ inet:ipv4=8.8.8.8 ]", new ApiStormQueryOpts() { View = view.Iden })).ToListAsync();
         Assert.AreEqual(1, results.Count);
         foreach (var result in results)
         {
             Console.WriteLine(result);
         }
-        
-        var result1 = SynapseClient.View.Execute<InetIPv4>(view.Iden, "inet:ipv4");
+
+        var result1 = SynapseClient.StormAsync<InetIPv4>("inet:ipv4", new ApiStormQueryOpts() { View = view.Iden });
         Assert.AreEqual(1, await result1.CountAsync());
-        var result2 = SynapseClient.View.Execute<InetIPv4>(view2.Iden, "inet:ipv4");
+        var result2 = SynapseClient.StormAsync<InetIPv4>("inet:ipv4", new ApiStormQueryOpts() { View = view2.Iden });
         Assert.AreEqual(0, await result2.CountAsync());
         var result3 = SynapseClient.StormAsync<InetIPv4>("inet:ipv4");
         Assert.AreEqual(0, await result3.CountAsync());

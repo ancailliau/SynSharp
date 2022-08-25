@@ -27,6 +27,11 @@ public class SynapseFormAttribute : System.Attribute
     public string Name { get; }
 
     /// <summary>
+    /// A short description of the type
+    /// </summary>
+    public string? Description { get; set; }
+
+    /// <summary>
     /// Initializes a new attribute decorator for a class representing the specified form.
     /// </summary>
     /// <param name="name">The represented form</param>

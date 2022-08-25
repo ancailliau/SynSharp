@@ -23,6 +23,7 @@ using System.Net.Http;
 using System.Net.Http.Json;
 using System.Text;
 using System.Threading.Tasks;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
@@ -34,23 +35,22 @@ namespace Synsharp;
 
 public class SynapseClient : IDisposable
 {
-    private readonly ILogger<SynapseClient> _logger;
-    public LayerHelper Layer { get; }
-    public ViewHelper View { get; }
+    private ILogger<SynapseClient> _logger;
+    public LayerHelper Layer { get; set; }
+    public ViewHelper View { get; set; }
     public NodeHelper Nodes { get; set; }
     
     public StormInitResponse? Init { get; set; }
     public StormFiniResponse? Fini { get; set; }
     public TextWriter Output { private get; set; }
 
-    private readonly HttpClient _client;
-    private readonly CookieContainer _cookieContainer;
-    private readonly Uri _baseAddress;
+    private HttpClient _client;
+    private CookieContainer _cookieContainer;
+    private Uri _baseAddress;
     private static Dictionary<string, Type> _cachedType = new();
     private readonly SynapseSettings _settings;
     private bool _loggedIn;
-    private readonly Stream _memoryStream;
-    private readonly ILoggerFactory _loggerFactory;
+    private Stream _memoryStream;
 
     /// <summary>
     /// Initializes a new SynapseClient.
@@ -71,12 +71,18 @@ public class SynapseClient : IDisposable
     /// <param name="stream"></param>
     public SynapseClient(string serverUrl, ILoggerFactory loggerFactory = null, Stream stream = null)
     {
+        ILoggerFactory factory;
         if (loggerFactory == null)
-            _loggerFactory = LoggerFactory.Create(builder => builder.AddConsole());
+            factory = LoggerFactory.Create(builder => builder.AddConsole());
         else
-            _loggerFactory = loggerFactory;
-        _logger = (_loggerFactory ?? throw new InvalidOperationException()).CreateLogger<SynapseClient>();
+            factory = loggerFactory;
         
+        InitClient(serverUrl, loggerFactory, stream);
+    }
+
+    private void InitClient(string serverUrl, ILoggerFactory factory, Stream stream)
+    {
+        _logger = (factory ?? throw new InvalidOperationException()).CreateLogger<SynapseClient>();
         _baseAddress = new Uri(serverUrl);
         _cookieContainer = new CookieContainer();
 
@@ -85,18 +91,24 @@ public class SynapseClient : IDisposable
         else
             _memoryStream = stream;
         Output = new StreamWriter(_memoryStream);
-        
+
         var handler = new HttpClientHandler()
-        { 
+        {
             ServerCertificateCustomValidationCallback = HttpClientHandler.DangerousAcceptAnyServerCertificateValidator,
             CookieContainer = _cookieContainer
         };
 
         _client = new HttpClient(handler) { BaseAddress = _baseAddress };
-            
+
         Layer = new LayerHelper(this);
         View = new ViewHelper(this);
-        Nodes = new NodeHelper(this, (_loggerFactory ?? throw new InvalidOperationException()).CreateLogger<NodeHelper>());
+        Nodes = new NodeHelper(this, factory.CreateLogger<NodeHelper>());
+    }
+
+    public SynapseClient(SynapseSettings settings, IServiceProvider serviceProvider)
+    {
+        _settings = settings;
+        InitClient(settings.URL, serviceProvider.GetRequiredService<ILoggerFactory>(), null);
     }
 
     /// <summary>
@@ -201,6 +213,7 @@ public class SynapseClient : IDisposable
                             }
                         } else if (status == "err")
                         {
+                            _logger.LogDebug(token.ToString());
                             var code = oToken["code"]?.Value<string>() ?? "";
                             var mesg = oToken["mesg"]?.Value<string>() ?? "";
                             throw new SynapseError(code, mesg);
@@ -225,19 +238,26 @@ public class SynapseClient : IDisposable
     }
 
     /// <summary>
-    /// Executes a storm query and returns a list of result
+    /// Executes a storm query in a specified view and returns a list of result
     /// </summary>
     /// <param name="query">The query</param>
+    /// <param name="apiStormQueryOpts"></param>
+    /// <param name="view">The view identifier (default view if none is specified)</param>
     /// <typeparam name="T">The type of data returned</typeparam>
     /// <returns>The query results</returns>
     /// <exception cref="SynapseError">If the server returns an error</exception>
     /// <exception cref="SynapseException">If the clients fails to execute the query</exception>
-    public async IAsyncEnumerable<T> StormAsync<T>(string query)
+    public async IAsyncEnumerable<T> StormAsync<T>(string query, ApiStormQueryOpts apiStormQueryOpts = null)
     {
         if (!_loggedIn) await LoginAsync(_settings.UserName, _settings.Password);
         _logger.LogDebug($"Will send the query '{query}'");
 
-        var info = new {query};
+        var info = new ApiStormQuery()
+        {
+            Query = query,
+            Opts = apiStormQueryOpts ?? new ApiStormQueryOpts()
+        };
+        _logger.LogTrace($"Query JSON: '{JsonConvert.SerializeObject(info)}'");
         var content = new StringContent(JsonConvert.SerializeObject(info), Encoding.UTF8, "application/json");
         var request = new HttpRequestMessage(HttpMethod.Post, "/api/v1/storm")
         {
@@ -372,6 +392,5 @@ public class SynapseClient : IDisposable
         _client?.Dispose();
         Output?.Dispose();
         _memoryStream?.Dispose();
-        _loggerFactory?.Dispose();
     }
 }

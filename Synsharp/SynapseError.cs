@@ -23,6 +23,8 @@ namespace Synsharp;
 /// </summary>
 public class SynapseError : Exception
 {
+    public string Code { get; }
+
     /// <summary>
     /// Initializes a SynapseError instance.
     /// </summary>
@@ -30,5 +32,6 @@ public class SynapseError : Exception
     /// <param name="message">The error message, as returned by the server.</param>
     public SynapseError(string code, string message) : base(code + ": " + message)
     {
+        Code = code;
     }
 }

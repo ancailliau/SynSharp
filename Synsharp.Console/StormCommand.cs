@@ -33,6 +33,7 @@ public class StormCommand : AsyncCommand<StormCommand.Settings>
         var synapseClient = new SynapseClient(settings.Url, loggerFactory);
         await synapseClient.LoginAsync(settings.Username, settings.Password);
 
+        string currentView = null;
         while (true)
         {
             try
@@ -43,7 +44,23 @@ public class StormCommand : AsyncCommand<StormCommand.Settings>
                     return 0;
                 }
                 
-                var results = await synapseClient.StormAsync<SynapseObject>(query).ToListAsync();
+                if (query.Equals("!view"))
+                {
+                    AnsiConsole.WriteLine($"CurrentView: {currentView ?? "default"}");
+                    var views = await synapseClient.View.List();
+                    
+                    var selection = AnsiConsole.Prompt(
+                        new SelectionPrompt<KeyValuePair<string,string>>()
+                            .Title("Select a [green]current view[/]?")
+                            .PageSize(10)
+                            .AddChoices(views.Select(_ => new KeyValuePair<string,string>(_.Iden, _.Name)).ToArray())
+                            .UseConverter(_ => _.Value)
+                        );
+                    currentView = selection.Key;
+                    continue;
+                }
+                
+                var results = await synapseClient.StormAsync<SynapseObject>(query, new ApiStormQueryOpts() {View = currentView}).ToListAsync();
 
                 var init = synapseClient.Init;
                 var fini = synapseClient.Fini;

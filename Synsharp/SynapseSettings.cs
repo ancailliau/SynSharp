@@ -2,7 +2,7 @@ namespace Synsharp;
 
 public class SynapseSettings
 {
-    public string URL { get; set; }
-    public string Password { get; set; }
-    public string UserName { get; set; }
+    public string URL { get; set; } = "https://localhost:8902/";
+    public string Password { get; set; } = "secret";
+    public string UserName { get; set; } = "root";
 }

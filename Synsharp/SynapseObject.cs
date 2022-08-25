@@ -31,8 +31,8 @@ namespace Synsharp;
 /// </summary>
 public abstract class SynapseObject
 {
-    [SynapseProperty(".created")] protected Time Created { set; get; }
-    [SynapseProperty("iden")] protected Str Iden { set; get; }
+    [SynapseProperty(".created")] public Time Created { set; get; }
+    [SynapseProperty("iden")] public Str Iden { set; get; }
 
     public HashSet<string> Tags { get; set; } = new();
 

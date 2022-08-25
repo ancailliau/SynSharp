@@ -19,6 +19,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Net;
 using System.Reflection;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using Synsharp.Attribute;
@@ -36,7 +37,7 @@ public class NodeHelper
         _logger = logger;
     }
 
-    public async Task<T> Add<T>(T synapseObject) where T : SynapseObject
+    public async Task<T> Add<T>(T synapseObject, string view = null) where T : SynapseObject
     {
         var value = GetCoreValueDynamic(synapseObject);
 
@@ -84,14 +85,19 @@ public class NodeHelper
             }
         }
 
+        var tagRegex = new Regex(@"[a-zA-Z0-9\.]+");
+        if (synapseObject.Tags.Any(_ => !tagRegex.Match(_).Success))
+            throw new SynapseException("Tags should match [a-zA-Z0-9.]+");
+
         // Build the storm command and execute
         var attribute = synapseObject.GetType().GetCustomAttribute<SynapseFormAttribute>();
         if (attribute != null)
         {
             var type = attribute.Name;
             var attributes = string.Join(" ", propertyDict.Select(_ => $":{_.Key}={_.Value}"));
-            var command = $"[ {type}={value} {attributes} ]";
-            var results = await _synapseClient.StormAsync<T>(command).ToListAsync();
+            var tags = string.Join(" ", synapseObject.Tags.Select(_ => $"+#{_}"));
+            var command = $"[ {type}={value} {attributes} {tags} ]";
+            var results = await _synapseClient.StormAsync<T>(command,new ApiStormQueryOpts(){View= view}).ToListAsync();
             return results.FirstOrDefault();
         }
         else
@@ -149,12 +155,33 @@ public class NodeHelper
         return (type, val);
     }
 
-    public async Task AddLightEdge(SynapseObject o1, SynapseObject o2, string @ref)
+    public async Task AddLightEdge(SynapseObject o1, SynapseObject o2, string @ref, string view = null)
     {
         var (t1, v1) = GetSelector(o1);
         var (t2, v2) = GetSelector(o2);
 
         var command = $"{t1}={v1} [ <({@ref})+ {{ {t2}={v2} }} ]";
-        _ = await _synapseClient.StormAsync<object>(command).ToListAsync();
+        _ = await _synapseClient.StormAsync<object>(command, new ApiStormQueryOpts(){View= view}).ToListAsync();
+    }
+
+    /// <summary>
+    /// Returns the node identified by the specified iden
+    /// </summary>
+    /// <param name="iden">The identifier</param>
+    /// <param name="view">The view</param>
+    /// <typeparam name="T">The type of the node</typeparam>
+    /// <returns>The node</returns>
+    public async Task<T> GetAsync<T>(string iden, string view = null)
+    {
+        return await _synapseClient.StormAsync<T>("",
+                new ApiStormQueryOpts()
+                {
+                    View = view,
+                    Idens = new[]
+                    {
+                        iden
+                    }
+                })
+            .SingleOrDefaultAsync();
     }
 }

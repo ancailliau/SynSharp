@@ -1,3 +1,5 @@
+using System.Collections.Generic;
+using System.Linq;
 using System.Net;
 using System.Threading.Tasks;
 using NUnit.Framework;
@@ -20,6 +22,24 @@ public class TestNodeHelper : TestSynapse
         
         Assert.IsNotNull(response);
         Assert.That(response.Equals(InetIPv6.Parse("2001:0db8:85a3:0000:0000:8a2e:0370:7334")));
+    }
+    
+    [Test]
+    public async Task TestAddNodeWithTags()
+    {
+        Assert.NotNull(SynapseClient);
+
+        var inetIPv6 = InetIPv6.Parse("2001:0db8:85a3:0000:0000:8a2e:0370:7334");
+        inetIPv6.Tags = new HashSet<string>() { "di.test", "random.tag" };
+        
+        var response = await SynapseClient.Nodes.Add(inetIPv6);
+        
+        Assert.IsNotNull(response);
+        Assert.AreEqual(4, response.Tags.Count);
+        Assert.That(response.Tags.Contains("di"));
+        Assert.That(response.Tags.Contains("di.test"));
+        Assert.That(response.Tags.Contains("random"));
+        Assert.That(response.Tags.Contains("random.tag"));
     }
     
     [Test]
