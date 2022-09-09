@@ -40,9 +40,35 @@ public class NodeHelper
     public async Task<T> Add<T>(T synapseObject, string view = null) where T : SynapseObject
     {
         var value = GetCoreValueDynamic(synapseObject);
+        var propertyDict = GetPropertyDict(synapseObject);
 
+        var tagRegex = new Regex(@"[a-zA-Z0-9\.]+");
+        _logger.LogDebug($"Got {synapseObject.Tags.Count()}");
+        if (synapseObject.Tags.Any(_ => !tagRegex.Match(_).Success))
+            throw new SynapseException("Tags should match [a-zA-Z0-9.]+");
+
+        // Build the storm command and execute
+        var attribute = synapseObject.GetType().GetCustomAttribute<SynapseFormAttribute>();
+        if (attribute != null)
+        {
+            var type = attribute.Name;
+            var attributes = string.Join(" ", propertyDict.Select(_ => $":{_.Key}={_.Value}"));
+            var tags = string.Join(" ", synapseObject.Tags.Select(_ => $"+#{_}"));
+            
+            var command = $"[ {type}=\"{StringHelpers.Escape(value)}\" {attributes} {tags} ]";
+            var results = await _synapseClient.StormAsync<T>(command,new ApiStormQueryOpts(){View= view}).ToListAsync();
+            return results.FirstOrDefault();
+        }
+        else
+        {
+            throw new SynapseException($"Could not infer form type for '{synapseObject.GetType().FullName}'");
+        }
+    }
+
+    private Dictionary<string, string> GetPropertyDict<T>(T synapseObject) where T : SynapseObject
+    {
         var propertyDict = new Dictionary<string, string>();
-        
+
         // Get the form properties
         var fields = SynapseConverter.GetFields(synapseObject.GetType());
         foreach (var field in fields)
@@ -62,7 +88,7 @@ public class NodeHelper
                 }
             }
         }
-        
+
         var properties = SynapseConverter.GetProperties(synapseObject.GetType());
         foreach (var propertyInfo in properties)
         {
@@ -79,31 +105,14 @@ public class NodeHelper
                     }
                     else
                     {
-                        throw new SynapseException($"The property '{propertyInfo.Name}' has no value or value is not a SynapseType.");
+                        throw new SynapseException(
+                            $"The property '{propertyInfo.Name}' has no value or value is not a SynapseType.");
                     }
                 }
             }
         }
 
-        var tagRegex = new Regex(@"[a-zA-Z0-9\.]+");
-        if (synapseObject.Tags.Any(_ => !tagRegex.Match(_).Success))
-            throw new SynapseException("Tags should match [a-zA-Z0-9.]+");
-
-        // Build the storm command and execute
-        var attribute = synapseObject.GetType().GetCustomAttribute<SynapseFormAttribute>();
-        if (attribute != null)
-        {
-            var type = attribute.Name;
-            var attributes = string.Join(" ", propertyDict.Select(_ => $":{_.Key}={_.Value}"));
-            var tags = string.Join(" ", synapseObject.Tags.Select(_ => $"+#{_}"));
-            var command = $"[ {type}={value} {attributes} {tags} ]";
-            var results = await _synapseClient.StormAsync<T>(command,new ApiStormQueryOpts(){View= view}).ToListAsync();
-            return results.FirstOrDefault();
-        }
-        else
-        {
-            throw new SynapseException($"Could not infer form type for '{synapseObject.GetType().FullName}'");
-        }
+        return propertyDict;
     }
 
     private static string GetCoreValueDynamic<T>(T synapseObject) where T : SynapseObject
@@ -164,6 +173,15 @@ public class NodeHelper
         _ = await _synapseClient.StormAsync<object>(command, new ApiStormQueryOpts(){View= view}).ToListAsync();
     }
 
+    public async Task RemoveLightEdge(SynapseObject o1, SynapseObject o2, string @ref, string view = null)
+    {
+        var (t1, v1) = GetSelector(o1);
+        var (t2, v2) = GetSelector(o2);
+
+        var command = $"{t1}={v1} [ <({@ref})- {{ {t2}={v2} }} ]";
+        _ = await _synapseClient.StormAsync<object>(command, new ApiStormQueryOpts(){View= view}).ToListAsync();
+    }
+
     /// <summary>
     /// Returns the node identified by the specified iden
     /// </summary>
@@ -183,5 +201,55 @@ public class NodeHelper
                     }
                 })
             .SingleOrDefaultAsync();
+    }
+
+    public async Task Remove(string iden, string viewIden = null)
+    {
+        if (iden == null) throw new ArgumentNullException(nameof(iden));
+        _ = (await _synapseClient.StormAsync<SynapseObject>(
+                $"| delnode",
+                new ApiStormQueryOpts() { View = viewIden, Idens = new[] { iden } })
+            .ToListAsync());
+    }
+
+    public async Task AddTag(string iden, string tagName, string viewIden = null)
+    {
+        if (iden == null) throw new ArgumentNullException(nameof(iden));
+        var tagRegex = new Regex(@"[a-zA-Z0-9\.]+");
+        if (!tagRegex.Match(tagName).Success)
+            throw new SynapseException("Tags should match [a-zA-Z0-9.]+");
+        _ = (await _synapseClient.StormAsync<SynapseObject>(
+                $"[ +#{tagName} ]",
+                new ApiStormQueryOpts() { View = viewIden, Idens = new[] { iden } })
+            .ToListAsync());
+    }
+
+    public IAsyncEnumerable<T> GetAsyncByProperty<T>(Dictionary<string,string> propertyValues, string view = null)
+    {
+        var attribute = typeof(T).GetCustomAttribute<SynapseFormAttribute>();
+        if (attribute != null)
+        {
+            var type = attribute.Name;
+
+            string selector = "{type}";
+            if (propertyValues.Count == 1)
+            {
+                var p = propertyValues.Single();
+                selector = $"{type}:{p.Key}={p.Value}";
+            }
+            else if (propertyValues.Count > 1)
+            {
+                var plist = propertyValues.ToList();
+                var p = plist.First();
+                var attributes = string.Join(" ", plist.Skip(1).Select(_ => $"+:{_.Key}={_.Value}"));
+                selector = $"{type}:{p.Key}={p.Value} {attributes}";
+            }
+            
+            return _synapseClient.StormAsync<T>(selector,new ApiStormQueryOpts(){View= view});
+        }
+        else
+        {
+            throw new SynapseException($"Could not infer form type for '{typeof(T).FullName}'");
+        }
     }
 }

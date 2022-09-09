@@ -73,6 +73,9 @@ public class InetIPv4 : SynapseType
         
         if (o is Int64 int64)
             return Parse(int64.ToString());
+        
+        if (o is IPAddress address)
+            return new InetIPv4(address);
 
         throw new NotImplementedException($"Cannot convert from '{o.GetType().FullName}' to '{typeof(InetIPv4).FullName}'");
     }

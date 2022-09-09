@@ -67,6 +67,8 @@ public class Hex : SynapseType
     {
         if (o is string str)
             return Parse(str);
+        if (o is Hex x)
+            return x;
 
         throw new NotImplementedException($"Cannot convert from '{o.GetType().FullName}' to '{typeof(Hex).FullName}'");
     }

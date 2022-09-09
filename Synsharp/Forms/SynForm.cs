@@ -19,13 +19,8 @@ using Synsharp.Types;
 
 namespace Synsharp.Forms;
 
-[SynapseForm("hash:sha256")]
-public class HashSHA256 : SynapseObject<Hex>
+[SynapseForm("syn:form")]
+public class SynForm : SynapseObject<Str>
 {
- public static HashSHA256 Parse(string str)
- {
-  var hash = new HashSHA256();
-  hash.SetValue(Hex.Parse(str));
-  return hash;
- }
+    
 }

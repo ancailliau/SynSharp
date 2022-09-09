@@ -66,6 +66,9 @@ public class InetUrl : SynapseType
     {
         if (o is string str)
             return Parse(str);
+        
+        if (o is Uri uri)
+            return new InetUrl(uri);
 
         throw new NotImplementedException($"Cannot convert from '{o.GetType().FullName}' to '{typeof(InetUrl).FullName}'");
     }

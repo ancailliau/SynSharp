@@ -20,6 +20,7 @@ using System.Linq;
 using System.Net;
 using System.Reflection;
 using System.Text;
+using Newtonsoft.Json;
 using Synsharp.Attribute;
 using Synsharp.Forms;
 using Synsharp.Types;
@@ -34,7 +35,7 @@ public abstract class SynapseObject
     [SynapseProperty(".created")] public Time Created { set; get; }
     [SynapseProperty("iden")] public Str Iden { set; get; }
 
-    public HashSet<string> Tags { get; set; } = new();
+    public TagTree Tags { get; set; } = new();
 
     public abstract string GetCoreValue();
 }

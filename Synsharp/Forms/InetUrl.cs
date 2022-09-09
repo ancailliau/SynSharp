@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 
+using System;
 using Synsharp.Attribute;
 
 namespace Synsharp.Forms;
@@ -21,6 +22,24 @@ namespace Synsharp.Forms;
 [SynapseForm("inet:url")]
 public class InetUrl : SynapseObject<Types.InetUrl>
 {
+    protected bool Equals(InetUrl other)
+    {
+        return base.Equals(other) && Equals(Value, other.Value);
+    }
+
+    public override bool Equals(object obj)
+    {
+        if (ReferenceEquals(null, obj)) return false;
+        if (ReferenceEquals(this, obj)) return true;
+        if (obj.GetType() != this.GetType()) return false;
+        return Equals((InetUrl)obj);
+    }
+
+    public override int GetHashCode()
+    {
+        return Value.GetHashCode();
+    }
+
     public InetUrl() : base()
     {
     }
@@ -39,4 +58,11 @@ public class InetUrl : SynapseObject<Types.InetUrl>
     [SynapseProperty("port")] public Types.InetPort Port { get; set; }
     [SynapseProperty("proto")] public Types.Str Proto { get; set; }
     [SynapseProperty("user")] public Types.InetUser User { get; set; }
+
+    public static InetUrl Parse(string str)
+    {
+        var address = new InetUrl();
+        address.SetValue(str);
+        return address;
+    }
 }

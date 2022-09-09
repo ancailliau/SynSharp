@@ -22,4 +22,10 @@ namespace Synsharp.Forms;
 [SynapseForm("hash:sha1")]
 public class HashSHA1 : SynapseObject<Hex>
 {
+ public static HashSHA1 Parse(string str)
+ {
+  var hash = new HashSHA1();
+  hash.SetValue(Hex.Parse(str));
+  return hash;
+ }
 }

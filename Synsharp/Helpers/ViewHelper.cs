@@ -91,7 +91,7 @@ public class ViewHelper
         return _client.StormAsync<T>($"view.exec {iden} {{ {query} }}");
     }
 
-    public object Merge(string iden)
+    public Task Merge(string iden)
     {
         var command = $"$view = $lib.view.get({iden}) $view.merge()";
         return _client.StormCallAsync(command);

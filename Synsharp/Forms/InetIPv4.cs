@@ -27,6 +27,11 @@ public class InetIPv4 : SynapseObject<Types.InetIPv4>
     {
     }
 
+    public InetIPv4(IPAddress s)
+    {
+        SetValue(s);
+    }
+    
     public InetIPv4(string s)
     {
         SetValue(s);

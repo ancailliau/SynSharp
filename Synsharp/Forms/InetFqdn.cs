@@ -22,4 +22,12 @@ namespace Synsharp.Forms;
 [SynapseForm("inet:fqdn")]
 public class InetFqdn : SynapseObject<Str>
 {
+      public InetFqdn() : base()
+      {
+      }
+
+      public InetFqdn(string s)
+      {
+          SetValue(s);
+      }
 }
