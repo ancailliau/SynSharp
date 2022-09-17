@@ -27,6 +27,7 @@ tarballs/
 test-results/
 Thumbs.db
 .vs/
+nuget.config
 
 # Mac bundle stuff
 *.dmg

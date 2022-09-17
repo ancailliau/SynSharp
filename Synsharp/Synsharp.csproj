@@ -5,11 +5,17 @@
         <AssemblyName>Synsharp</AssemblyName>
         <RootNamespace>Synsharp</RootNamespace>
         <PackageId>Synsharp</PackageId>
-        <PackageVersion>0.1.0</PackageVersion>
+        <PackageVersion>0.1.1</PackageVersion>
         <Title>Synsharp</Title>
         <Authors>Antoine Cailliau</Authors>
         <Description>A C# client for Vertex Synapse</Description>
         <Copyright>2022 - Antoine Cailliau</Copyright>
+        <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+        <PackageProjectUrl>https://github.com/ancailliau/SynSharp</PackageProjectUrl>
+        <PackageLicenseUrl>https://github.com/ancailliau/SynSharp/blob/master/LICENSE.txt</PackageLicenseUrl>
+        <RepositoryUrl>https://github.com/ancailliau/SynSharp</RepositoryUrl>
+        <PackageReleaseNotes>security, threat-intelligence, vertex, synapse</PackageReleaseNotes>
+        <PackageIcon>79460f49aacf43b4a07c526f8078803e.png</PackageIcon>
     </PropertyGroup>
 
     <ItemGroup>
@@ -18,6 +24,13 @@
       <PackageReference Include="Microsoft.Extensions.Logging.Console" Version="6.0.0" />
       <PackageReference Include="Newtonsoft.Json" Version="13.0.1" />
       <PackageReference Include="System.Linq.Async" Version="6.0.1" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <None Update="79460f49aacf43b4a07c526f8078803e.png">
+        <Pack>True</Pack>
+        <PackagePath></PackagePath>
+      </None>
     </ItemGroup>
 
 </Project>
