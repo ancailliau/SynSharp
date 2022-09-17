@@ -55,7 +55,7 @@ public class NodeHelper
             var attributes = string.Join(" ", propertyDict.Select(_ => $":{_.Key}={_.Value}"));
             var tags = string.Join(" ", synapseObject.Tags.Select(_ => $"+#{_}"));
             
-            var command = $"[ {type}=\"{StringHelpers.Escape(value)}\" {attributes} {tags} ]";
+            var command = $"[ {type}={StringHelpers.Escape(value)} {attributes} {tags} ]";
             var results = await _synapseClient.StormAsync<T>(command,new ApiStormQueryOpts(){View= view}).ToListAsync();
             return results.FirstOrDefault();
         }
