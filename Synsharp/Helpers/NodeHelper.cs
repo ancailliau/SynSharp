@@ -37,13 +37,51 @@ public class NodeHelper
         _logger = logger;
     }
 
+    public async IAsyncEnumerable<T> Add<T>(IEnumerable<T> synapseObjects, string view = null) where T : SynapseObject
+    {
+        foreach (var o in synapseObjects.Batch(50))
+        {
+            string command = string.Join(" ", $"[ {o.Select(BuildCommand)} ]");
+
+            if (!string.IsNullOrEmpty(command))
+            {
+                var results = _synapseClient.StormAsync<T>(command,
+                    new ApiStormQueryOpts()
+                    {
+                        View = view
+                    });
+                await foreach (var r in results)
+                {
+                    yield return r;
+                }
+            }   
+        }
+    }
+    
     public async Task<T> Add<T>(T synapseObject, string view = null) where T : SynapseObject
+    {
+        string command = BuildCommand(synapseObject);
+
+        if (!string.IsNullOrEmpty(command))
+        {
+            var results = await _synapseClient.StormAsync<T>($"[ {command} ]",
+                    new ApiStormQueryOpts()
+                    {
+                        View = view
+                    })
+                .ToListAsync();
+            return results.FirstOrDefault();
+        }
+
+        return null;
+    }
+
+    private string BuildCommand<T>(T synapseObject) where T : SynapseObject
     {
         var value = GetCoreValueDynamic(synapseObject);
         var propertyDict = GetPropertyDict(synapseObject);
 
         var tagRegex = new Regex(@"[a-zA-Z0-9\.]+");
-        _logger.LogDebug($"Got {synapseObject.Tags.Count()}");
         if (synapseObject.Tags.Any(_ => !tagRegex.Match(_).Success))
             throw new SynapseException("Tags should match [a-zA-Z0-9.]+");
 
@@ -55,9 +93,7 @@ public class NodeHelper
             var attributes = string.Join(" ", propertyDict.Select(_ => $":{_.Key}={_.Value}"));
             var tags = string.Join(" ", synapseObject.Tags.Select(_ => $"+#{_}"));
             
-            var command = $"[ {type}={StringHelpers.Escape(value)} {attributes} {tags} ]";
-            var results = await _synapseClient.StormAsync<T>(command,new ApiStormQueryOpts(){View= view}).ToListAsync();
-            return results.FirstOrDefault();
+            return $"{type}={StringHelpers.Escape(value)} {attributes} {tags}";
         }
         else
         {
@@ -163,13 +199,27 @@ public class NodeHelper
         
         return (type, val);
     }
+    
+    public async Task AddLightEdge(IEnumerable<SynapseLightEdge> edges, string view = null)
+    {
+        var commands = new List<string>();
 
+        foreach (var edge in edges)
+        {
+            var (t1, v1) = GetSelector(edge.Source);
+            var (t2, v2) = GetSelector(edge.Target);
+            commands.Add($"{t1}={StringHelpers.Escape(v1)} [ <({edge.Verb})+ {{ {t2}={StringHelpers.Escape(v2)} }} ]");   
+        }
+        
+        _ = await _synapseClient.StormAsync<object>(string.Join(" ", commands), new ApiStormQueryOpts(){View= view}).ToListAsync();
+    }
+    
     public async Task AddLightEdge(SynapseObject o1, SynapseObject o2, string @ref, string view = null)
     {
         var (t1, v1) = GetSelector(o1);
         var (t2, v2) = GetSelector(o2);
 
-        var command = $"{t1}={v1} [ <({@ref})+ {{ {t2}={v2} }} ]";
+        var command = $"{t1}={StringHelpers.Escape(v1)} [ <({@ref})+ {{ {t2}={StringHelpers.Escape(v2)} }} ]";
         _ = await _synapseClient.StormAsync<object>(command, new ApiStormQueryOpts(){View= view}).ToListAsync();
     }
 
@@ -178,7 +228,7 @@ public class NodeHelper
         var (t1, v1) = GetSelector(o1);
         var (t2, v2) = GetSelector(o2);
 
-        var command = $"{t1}={v1} [ <({@ref})- {{ {t2}={v2} }} ]";
+        var command = $"{t1}={StringHelpers.Escape(v1)} [ <({@ref})- {{ {t2}={StringHelpers.Escape(v2)} }} ]";
         _ = await _synapseClient.StormAsync<object>(command, new ApiStormQueryOpts(){View= view}).ToListAsync();
     }
 
@@ -202,6 +252,22 @@ public class NodeHelper
                 })
             .SingleOrDefaultAsync();
     }
+    
+    public IAsyncEnumerable<T> GetAllAsync<T>(string view = null)
+    {
+        var attribute = typeof(T).GetCustomAttribute<SynapseFormAttribute>();
+        if (attribute != null)
+        {
+            var type = attribute.Name;
+            return _synapseClient.StormAsync<T>($"{type}",
+                    new ApiStormQueryOpts()
+                    {
+                        View = view
+                    });
+        }
+
+        return AsyncEnumerable.Empty<T>();
+    }
 
     public async Task Remove(string iden, string viewIden = null)
     {
@@ -220,6 +286,18 @@ public class NodeHelper
             throw new SynapseException("Tags should match [a-zA-Z0-9.]+");
         _ = (await _synapseClient.StormAsync<SynapseObject>(
                 $"[ +#{tagName} ]",
+                new ApiStormQueryOpts() { View = viewIden, Idens = new[] { iden } })
+            .ToListAsync());
+    }
+
+    public async Task RemoveTag(string iden, string tagName, string viewIden = null)
+    {
+        if (iden == null) throw new ArgumentNullException(nameof(iden));
+        var tagRegex = new Regex(@"[a-zA-Z0-9\.]+");
+        if (!tagRegex.Match(tagName).Success)
+            throw new SynapseException("Tags should match [a-zA-Z0-9.]+");
+        _ = (await _synapseClient.StormAsync<SynapseObject>(
+                $"[ -#{tagName} ]",
                 new ApiStormQueryOpts() { View = viewIden, Idens = new[] { iden } })
             .ToListAsync());
     }

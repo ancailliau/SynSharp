@@ -8,6 +8,7 @@ using NUnit.Framework;
 using Synsharp.Forms;
 using Synsharp.Types;
 using CryptoX509Cert = Synsharp.Forms.CryptoX509Cert;
+using InetFqdn = Synsharp.Forms.InetFqdn;
 using InetIPv6 = Synsharp.Forms.InetIPv6;
 using InetUrl = Synsharp.Forms.InetUrl;
 
@@ -15,6 +16,23 @@ namespace Synsharp.Tests;
 
 public class TestNodeHelper : TestSynapse
 {   
+    [Test]
+    public async Task TestAddMultipleNodes()
+    {
+        Assert.NotNull(SynapseClient);
+
+        var response = SynapseClient
+            .Nodes.Add(new SynapseObject[]
+            {
+                InetIPv6.Parse("2001:0db8:85a3:0000:0000:8a2e:0370:7334"),
+                InetFqdn.Parse("www.google.com"),
+                InetUrl.Parse("http://example.org/dummy.html")
+            });
+        
+        Assert.IsNotNull(response);
+        Assert.That((await response.CountAsync()) == 3);
+    }
+    
     [Test]
     public async Task TestAddIPv6Node()
     {

@@ -14,25 +14,33 @@
  * limitations under the License.
  */
 
+using System.Net;
 using Synsharp.Attribute;
 using Synsharp.Types;
 
 namespace Synsharp.Forms;
 
-[SynapseForm("inet:fqdn")]
-public class InetFqdn : SynapseObject<Str>
+[SynapseForm("inet:cidr4")]
+public class InetCidr4 : SynapseObject<Types.InetCidr4>
 {
-      public InetFqdn() : base()
-      {
-      }
+    public InetCidr4() : base()
+    {
+    }
 
-      public InetFqdn(string s)
-      {
-          SetValue(s);
-      }
-
-      public static SynapseObject Parse(string str)
-      {
-          return new InetFqdn(str);
-      }
+    public InetCidr4(IPNetwork s)
+    {
+        SetValue(s);
+    }
+    
+    public InetCidr4(string s)
+    {
+        SetValue(s);
+    }
+    
+    public static InetCidr4 Parse(string str)
+    {
+        var address = new InetCidr4();
+        address.SetValue(str);
+        return address;
+    }
 }
