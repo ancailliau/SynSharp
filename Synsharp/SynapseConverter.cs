@@ -64,7 +64,7 @@ public class SynapseConverter
         return coreValue;
     }
     
-    private static object? GetInstance<T>(Type type, T coreValue, SynapseObjectMetaData meta = null)
+    public static object? GetInstance<T>(Type type, T coreValue, SynapseObjectMetaData meta = null)
     {
         Delegate constructorCallingLambda = null;
 
@@ -139,7 +139,10 @@ public class SynapseConverter
             
         foreach (var kv in metaObj.Props)
         {
-            SetFormProperty(i, kv.Key, kv.Value);
+            if (kv.Value is JToken jToken)
+                SetFormProperty(i, kv.Key, ConvertFromJTokenTypeToBaseType(jToken));       
+            else
+                SetFormProperty(i, kv.Key, kv.Value);
         }
         
         SetFormProperty(i, "iden", metaObj.Iden);
@@ -155,6 +158,7 @@ public class SynapseConverter
         {
             var fieldInfo = _cachedField[type][key];
             fieldInfo.SetValue(instance, Convert(value.GetType(), fieldInfo.FieldType, value));
+            
         } else if (_cachedProperty[type].ContainsKey(key))
         {
             var fieldInfo = _cachedProperty[type][key];
@@ -171,7 +175,7 @@ public class SynapseConverter
             foreach (var field in fields)
             {
                 var attribute = field.GetCustomAttribute<SynapsePropertyAttribute>();
-                if (attribute != null)
+                if (attribute != null && !attribute.ReadOnly)
                 {
                     _cachedField[type].Add(attribute.Name, field);
                 }
@@ -182,7 +186,7 @@ public class SynapseConverter
             foreach (var property in properties)
             {
                 var attribute = property.GetCustomAttribute<SynapsePropertyAttribute>();
-                if (attribute != null)
+                if (attribute != null && !attribute.ReadOnly)
                 {
                     _cachedProperty[type].Add(attribute.Name, property);
                 }
@@ -202,7 +206,7 @@ public class SynapseConverter
             .Where(pi => pi.GetCustomAttributes(typeof(SynapsePropertyAttribute), false).Any());
     }
 
-    private static object? Convert(Type from, Type to, object value)
+    public static object? Convert(Type from, Type to, object value)
     {
         if (to == from)
             return value;

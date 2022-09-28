@@ -46,7 +46,7 @@ public abstract class SynapseObject
 /// <typeparam name="T">The core value type</typeparam>
 public abstract class SynapseObject<T> : SynapseObject where T: SynapseType
 {
-    private T _value;
+    protected T _value;
     
     /// <summary>
     /// Returns the core value of the object.

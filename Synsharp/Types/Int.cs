@@ -31,6 +31,8 @@ public class Int : SynapseType
     {
         if (ReferenceEquals(null, obj)) return false;
         if (ReferenceEquals(this, obj)) return true;
+        if (obj is int i) return _value == i;
+        if (obj is long l) return _value == l;
         if (obj.GetType() != this.GetType()) return false;
         return Equals((Int)obj);
     }
@@ -46,7 +48,8 @@ public class Int : SynapseType
     }
     public static implicit operator long(Int d) => d._value;
     public static implicit operator Int(long d) => new Int(d);
-
+    public static implicit operator Int(int d) => new Int(d);
+    
     public override string ToString()
     {
         return _value.ToString();
@@ -67,6 +70,9 @@ public class Int : SynapseType
         if (o is string str)
             return Parse(str);
 
+        if (o is Int64 int64)
+            return new Int(int64);
+        
         throw new NotImplementedException($"Cannot convert from '{o.GetType().FullName}' to '{typeof(Int).FullName}'");
     }
 }

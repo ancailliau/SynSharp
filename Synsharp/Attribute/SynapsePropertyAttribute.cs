@@ -26,6 +26,8 @@ public class SynapsePropertyAttribute : System.Attribute
     /// </summary>
     public string Name { get; }
 
+    public bool ReadOnly { get; set; } = false;
+
     /// <summary>
     /// Initializes a new SynapsePropertyAttribute.
     /// </summary>
@@ -33,5 +35,11 @@ public class SynapsePropertyAttribute : System.Attribute
     public SynapsePropertyAttribute(string name)
     {
         Name = name;
+    }
+    
+    public SynapsePropertyAttribute(string name, bool readOnly)
+    {
+        Name = name;
+        ReadOnly = readOnly;
     }
 }

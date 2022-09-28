@@ -52,7 +52,7 @@ public class GUID : SynapseType
 
     public override string GetCoreValue()
     {
-        return "*";
+        return string.IsNullOrEmpty(_value) ? "*" : _value;
     }
 
     public static GUID Parse(string s)

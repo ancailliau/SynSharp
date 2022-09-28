@@ -54,7 +54,7 @@ public class InetUrl : SynapseType
 
     public override string GetCoreValue()
     {
-        return _value.ToString();
+        return StringHelpers.Escape(_value.ToString());
     }
 
     public static InetUrl Parse(string s)

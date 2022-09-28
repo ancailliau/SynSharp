@@ -6,8 +6,12 @@ using Synsharp.Types;
 namespace Synsharp.Forms;
 
 [SynapseForm("inet:dns:a")]
-public class InetDnsA : SynapseObject<Comp<Str, Types.InetIPv4>>
+public class InetDnsA : SynapseObject<Types.InetDnsA>
 {
-    [SynapseProperty("fqdn")] public InetFqdn FQDN { get; set; }
-    [SynapseProperty("ipv4")] public Types.InetIPv4 IPv4 { get; set; }
+    public InetDnsA()
+    {
+        
+    }
+    public Types.InetFqdn FQDN => _value.Value.Item1;
+    public Types.InetIPv4 IPv4 => _value.Value.Item2;
 }

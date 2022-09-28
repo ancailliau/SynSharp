@@ -5,12 +5,11 @@ namespace Synsharp.Types;
 public class InetFqdn : SynapseType
 {
     private string _value;
-
+    
     public InetFqdn(string value)
     {
         _value = value;
     }
-
 
     protected bool Equals(InetFqdn other)
     {

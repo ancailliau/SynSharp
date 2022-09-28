@@ -37,7 +37,7 @@ public class Str : SynapseType
 
     public override string GetCoreValue()
     {
-        return _value.ToString();
+        return StringHelpers.Escape(_value.ToString());
     }
 
     public static Str Parse(string s)
