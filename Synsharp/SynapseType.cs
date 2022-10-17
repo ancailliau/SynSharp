@@ -18,5 +18,6 @@ namespace Synsharp;
 
 public abstract class SynapseType
 {
+    public abstract string GetEscapedCoreValue();
     public abstract string GetCoreValue();
 }

@@ -50,9 +50,14 @@ public class GUID : SynapseType
         return _value;
     }
 
-    public override string GetCoreValue()
+    public override string GetEscapedCoreValue()
     {
         return string.IsNullOrEmpty(_value) ? "*" : _value;
+    }
+
+    public override string GetCoreValue()
+    {
+        return _value.ToString();
     }
 
     public static GUID Parse(string s)

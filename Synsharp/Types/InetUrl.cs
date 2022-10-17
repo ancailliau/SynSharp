@@ -52,9 +52,14 @@ public class InetUrl : SynapseType
         return _value.ToString();
     }
 
-    public override string GetCoreValue()
+    public override string GetEscapedCoreValue()
     {
         return StringHelpers.Escape(_value.ToString());
+    }
+
+    public override string GetCoreValue()
+    {
+        return _value.ToString();
     }
 
     public static InetUrl Parse(string s)

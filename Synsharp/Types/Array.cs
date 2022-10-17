@@ -35,6 +35,11 @@ public class Array<T> : SynapseType where T: SynapseType
         return $"[{string.Join(",", _value.Select(_ => _.ToString()))}]";
     }
 
+    public override string GetEscapedCoreValue()
+    {
+        throw new NotImplementedException();
+    }
+
     public override string GetCoreValue()
     {
         throw new NotImplementedException();

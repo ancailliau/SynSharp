@@ -53,9 +53,14 @@ public class Hex : SynapseType
         return _value;
     }
 
-    public override string GetCoreValue()
+    public override string GetEscapedCoreValue()
     {
         return _value;
+    }
+
+    public override string GetCoreValue()
+    {
+        return _value.ToString();
     }
 
     public static Hex Parse(string s)

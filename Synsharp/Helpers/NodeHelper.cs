@@ -41,7 +41,7 @@ public class NodeHelper
     {
         foreach (var o in synapseObjects.Batch(50))
         {
-            string command = string.Join(" ", $"[ {o.Select(BuildCommand)} ]");
+            string command = string.Join(" ", $"[ {string.Join(" ", o.Select(BuildCommand))} ]");
 
             if (!string.IsNullOrEmpty(command))
             {
@@ -116,7 +116,7 @@ public class NodeHelper
                 if (val != null && val is SynapseType sval)
                 {
                     _logger.LogTrace($"Convert value for '{propertyAttribute.Name}': '{val.ToString()}'");
-                    propertyDict.Add(propertyAttribute.Name, sval.GetCoreValue());
+                    propertyDict.Add(propertyAttribute.Name, sval.GetEscapedCoreValue());
                 }
                 else
                 {
@@ -137,7 +137,7 @@ public class NodeHelper
                     if (val is SynapseType sval)
                     {
                         _logger.LogTrace($"Convert value for '{propertyAttribute.Name}': '{val.ToString()}'");
-                        propertyDict.Add(propertyAttribute.Name, sval.GetCoreValue());
+                        propertyDict.Add(propertyAttribute.Name, sval.GetEscapedCoreValue());
                     }
                     else
                     {
@@ -208,7 +208,7 @@ public class NodeHelper
         {
             var (t1, v1) = GetSelector(edge.Source);
             var (t2, v2) = GetSelector(edge.Target);
-            commands.Add($"{t1}={v1} [ <({edge.Verb})+ {{ {t2}={v2} }} ]");   
+            commands.Add($"{t1}={v1} [ +({edge.Verb})> {{ {t2}={v2} }} ]");   
         }
         
         _ = await _synapseClient.StormAsync<object>(string.Join(" ", commands), new ApiStormQueryOpts(){View= view}).ToListAsync();
@@ -219,7 +219,7 @@ public class NodeHelper
         var (t1, v1) = GetSelector(o1);
         var (t2, v2) = GetSelector(o2);
 
-        var command = $"{t1}={v1} [ <({@ref})+ {{ {t2}={v2} }} ]";
+        var command = $"{t1}={v1} [ +({@ref})> {{ {t2}={v2} }} ]";
         _ = await _synapseClient.StormAsync<object>(command, new ApiStormQueryOpts(){View= view}).ToListAsync();
     }
 
@@ -228,7 +228,7 @@ public class NodeHelper
         var (t1, v1) = GetSelector(o1);
         var (t2, v2) = GetSelector(o2);
 
-        var command = $"{t1}={v1} [ <({@ref})- {{ {t2}={v2} }} ]";
+        var command = $"{t1}={v1} [ -({@ref})> {{ {t2}={v2} }} ]";
         _ = await _synapseClient.StormAsync<object>(command, new ApiStormQueryOpts(){View= view}).ToListAsync();
     }
 

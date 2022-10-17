@@ -32,6 +32,11 @@ public class InetIPv6 : SynapseObject<Types.InetIPv6>
         SetValue(s);
     }
 
+    public InetIPv6(IPAddress ipAddress)
+    {
+        SetValue(ipAddress);
+    }
+
     public static InetIPv6 Parse(string str)
     {
         var address = new InetIPv6();

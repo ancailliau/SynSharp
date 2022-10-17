@@ -37,6 +37,7 @@ public abstract class SynapseObject
 
     public TagTree Tags { get; set; } = new();
 
+    public abstract string GetEscapedCoreValue();
     public abstract string GetCoreValue();
 }
 
@@ -62,37 +63,16 @@ public abstract class SynapseObject<T> : SynapseObject where T: SynapseType
     {
     }
 
+    public override string GetEscapedCoreValue()
+    {
+        if (_value == null) throw new ArgumentNullException(nameof(_value));
+        return _value.GetEscapedCoreValue() ?? string.Empty;
+    }
+
     public override string GetCoreValue()
     {
         if (_value == null) throw new ArgumentNullException(nameof(_value));
-        
-        string value = string.Empty;
-        if (_value is string s)
-        {
-            value = s.Escape();
-        }
-        else if (_value is IPAddress a)
-        {
-            value = a.ToString();
-        }
-        else if (_value is Int32 i)
-        {
-            value = i.ToString();
-        }
-        else if (_value is SynapseType st)
-        {
-            value = st.GetCoreValue();
-        }
-        else if (_value is SynapseObject so)
-        {
-            value = so.GetCoreValue();
-        }
-        else
-        {
-            throw new System.NotImplementedException($"Value of type '{_value.GetType()}' could not be converted.");
-        }
-
-        return value;
+        return _value.GetCoreValue() ?? string.Empty;
     }
         
     /// <summary>

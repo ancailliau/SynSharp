@@ -41,6 +41,11 @@ public class Comp<T1,T2> : SynapseType where T1: SynapseType where T2: SynapseTy
         return $"({string.Join(",", _value)})";
     }
 
+    public override string GetEscapedCoreValue()
+    {
+        return $"({_value.Item1.GetEscapedCoreValue()},{_value.Item2.GetEscapedCoreValue()})";
+    }
+
     public override string GetCoreValue()
     {
         return $"({_value.Item1.GetCoreValue()},{_value.Item2.GetCoreValue()})";

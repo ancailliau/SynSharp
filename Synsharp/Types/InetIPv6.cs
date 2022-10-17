@@ -53,6 +53,11 @@ public class InetIPv6 : SynapseType
         return _value.ToString();
     }
 
+    public override string GetEscapedCoreValue()
+    {
+        return _value.ToString();
+    }
+
     public override string GetCoreValue()
     {
         return _value.ToString();
@@ -73,6 +78,9 @@ public class InetIPv6 : SynapseType
         
         if (o is Int64 int64)
             return Parse(int64.ToString());
+
+        if (o is IPAddress ipAddress)
+            return new InetIPv6(ipAddress);
         
         throw new NotImplementedException($"Cannot convert from '{o.GetType().FullName}' to '{typeof(InetIPv6).FullName}'");
     }

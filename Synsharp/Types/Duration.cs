@@ -34,6 +34,11 @@ public class Duration : SynapseType
         return _value.ToString();
     }
 
+    public override string GetEscapedCoreValue()
+    {
+        return _value.ToString();
+    }
+
     public override string GetCoreValue()
     {
         return _value.ToString();

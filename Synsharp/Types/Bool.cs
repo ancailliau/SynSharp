@@ -52,6 +52,11 @@ public class Bool : SynapseType
         return _value ? "True" : "False";
     }
 
+    public override string GetEscapedCoreValue()
+    {
+        return _value ? "1" : "0";
+    }
+
     public override string GetCoreValue()
     {
         return _value ? "1" : "0";

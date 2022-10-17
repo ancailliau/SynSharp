@@ -20,7 +20,7 @@ using Synsharp.Types;
 
 namespace Synsharp.Forms;
 
-[SynapseForm("inet:cidr4")]
+[SynapseForm("inet:cidr6")]
 public class InetCidr6 : SynapseObject<Types.InetCidr6>
 {
     public InetCidr6() : base()
