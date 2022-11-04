@@ -15,14 +15,34 @@
  */
 
 using System;
+using Newtonsoft.Json;
 
 namespace Synsharp.Types;
 
+public class HexConverter : JsonConverter
+{
+    public override void WriteJson(JsonWriter writer, object value, JsonSerializer serializer)
+    {
+        writer.WriteValue(((Hex)value).Value);
+    }
+
+    public override object ReadJson(JsonReader reader, Type objectType, object existingValue, JsonSerializer serializer)
+    {
+        return Str.Parse((string)reader.Value);
+    }
+
+    public override bool CanConvert(Type objectType)
+    {
+        return objectType == typeof(Hex);
+    }
+}
+
+[JsonConverter(typeof(HexConverter))]
 public class Hex : SynapseType
 {
     protected bool Equals(Hex other)
     {
-        return _value == other._value;
+        return Value == other.Value;
     }
 
     public override bool Equals(object obj)
@@ -35,32 +55,32 @@ public class Hex : SynapseType
 
     public override int GetHashCode()
     {
-        return (_value != null ? _value.GetHashCode() : 0);
+        return (Value != null ? Value.GetHashCode() : 0);
     }
 
-    protected string _value;
+    public string Value { get; }
 
     protected Hex(string value)
     {
-        _value = value;
+        Value = value;
     }
 
-    public static implicit operator string(Hex d) => d._value;
+    public static implicit operator string(Hex d) => d.Value;
     public static implicit operator Hex(string d) => new Hex(d);
 
     public override string ToString()
     {
-        return _value;
+        return Value;
     }
 
     public override string GetEscapedCoreValue()
     {
-        return _value;
+        return Value;
     }
 
     public override string GetCoreValue()
     {
-        return _value.ToString();
+        return Value.ToString();
     }
 
     public static Hex Parse(string s)

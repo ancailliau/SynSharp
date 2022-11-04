@@ -14,13 +14,35 @@
  * limitations under the License.
  */
 
+using System;
+using Newtonsoft.Json;
+
 namespace Synsharp.Types;
 
+public class GUIDConverter : JsonConverter
+{
+    public override void WriteJson(JsonWriter writer, object value, JsonSerializer serializer)
+    {
+        writer.WriteValue(((GUID) value).Value);
+    }
+
+    public override object ReadJson(JsonReader reader, Type objectType, object existingValue, JsonSerializer serializer)
+    {
+        return Str.Parse((string)reader.Value);
+    }
+
+    public override bool CanConvert(Type objectType)
+    {
+        return objectType == typeof(Guid);
+    }
+}
+
+[JsonConverter(typeof(GUIDConverter))]
 public class GUID : SynapseType
 {
     protected bool Equals(GUID other)
     {
-        return _value == other._value;
+        return Value == other.Value;
     }
 
     public override bool Equals(object obj)
@@ -33,31 +55,32 @@ public class GUID : SynapseType
 
     public override int GetHashCode()
     {
-        return (_value != null ? _value.GetHashCode() : 0);
+        return (Value != null ? Value.GetHashCode() : 0);
     }
 
-    private string _value;
+    public string Value { get; }
+
     protected GUID(string value)
     {
-        _value = value;
+        Value = value;
     }
 
-    public static implicit operator string(GUID d) => d._value;
+    public static implicit operator string(GUID d) => d.Value;
     public static implicit operator GUID(string d) => new GUID(d);
 
     public override string ToString()
     {
-        return _value;
+        return Value;
     }
 
     public override string GetEscapedCoreValue()
     {
-        return string.IsNullOrEmpty(_value) ? "*" : _value;
+        return string.IsNullOrEmpty(Value) ? "*" : Value;
     }
 
     public override string GetCoreValue()
     {
-        return _value.ToString();
+        return Value.ToString();
     }
 
     public static GUID Parse(string s)

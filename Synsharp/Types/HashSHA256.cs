@@ -8,7 +8,7 @@ public class HashSHA256: Hex
     {
     }
     
-    public static implicit operator string(HashSHA256 d) => d._value;
+    public static implicit operator string(HashSHA256 d) => d.Value;
     public static implicit operator HashSHA256(string d) => new HashSHA256(d);
     
     public static HashSHA256 Convert(object o)

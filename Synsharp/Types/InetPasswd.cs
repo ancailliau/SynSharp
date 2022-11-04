@@ -8,7 +8,7 @@ public class InetPasswd : Str
     {
     }
     
-    public static implicit operator string(InetPasswd d) => d._value;
+    public static implicit operator string(InetPasswd d) => d.Value;
     public static implicit operator InetPasswd(string d) => new InetPasswd(d);
 
     public static InetPasswd Parse(string s)

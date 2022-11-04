@@ -15,7 +15,9 @@
  */
 
 using System;
+using System.Reflection;
 using Newtonsoft.Json;
+using Synsharp.Attribute;
 
 namespace Synsharp;
 
@@ -24,6 +26,25 @@ namespace Synsharp;
 /// </summary>
 public static class StringHelpers
 {
+    /// <summary>
+    /// Returns the synapse type, like inet:ipv4.
+    /// </summary>
+    /// <param name="t">The C# type</param>
+    /// <returns>The synapse native type</returns>
+    /// <exception cref="Exception">The specified type is not a synapse object.</exception>
+    public static string ToSynapseType(this Type t)
+    {
+        if (t.IsSubclassOf(typeof(Synsharp.SynapseObject)))
+        {
+            var form = t.GetCustomAttribute<SynapseFormAttribute>();
+            if (form == null)
+                throw new Exception("Type is not a valid Synapse type");
+
+            return form.Name;
+        }
+        throw new Exception("Type is not a valid Synapse type");
+    }
+    
     /// <summary>
     /// Normalizes a string such that all words are separated by one space only.
     /// </summary>

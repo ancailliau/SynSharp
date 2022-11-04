@@ -16,14 +16,34 @@
 
 using System;
 using System.Net;
+using Newtonsoft.Json;
 
 namespace Synsharp.Types;
 
+public class InetCidr6Converter : JsonConverter
+{
+    public override void WriteJson(JsonWriter writer, object value, JsonSerializer serializer)
+    {
+        writer.WriteValue(((InetCidr6)value).Value.ToString());
+    }
+
+    public override object ReadJson(JsonReader reader, Type objectType, object existingValue, JsonSerializer serializer)
+    {
+        return Str.Parse((string)reader.Value);
+    }
+
+    public override bool CanConvert(Type objectType)
+    {
+        return objectType == typeof(InetCidr6);
+    }
+}
+
+[JsonConverter(typeof(InetCidr6Converter))]
 public class InetCidr6 : SynapseType
 {
     protected bool Equals(InetCidr6 other)
     {
-        return Equals(_value, other._value);
+        return Equals(Value, other.Value);
     }
 
     public override bool Equals(object obj)
@@ -36,31 +56,32 @@ public class InetCidr6 : SynapseType
 
     public override int GetHashCode()
     {
-        return (_value != null ? _value.GetHashCode() : 0);
+        return (Value != null ? Value.GetHashCode() : 0);
     }
 
-    private IPNetwork _value;
+    public IPNetwork Value { get; }
+
     private InetCidr6(IPNetwork value)
     {
-        _value = value;
+        Value = value;
     }
 
-    public static implicit operator IPNetwork(InetCidr6 d) => d._value;
+    public static implicit operator IPNetwork(InetCidr6 d) => d.Value;
     public static implicit operator InetCidr6(IPNetwork d) => new InetCidr6(d);
 
     public override string ToString()
     {
-        return _value.ToString();
+        return Value.ToString();
     }
 
     public override string GetEscapedCoreValue()
     {
-        return _value.ToString();
+        return Value.ToString();
     }
 
     public override string GetCoreValue()
     {
-        return _value.ToString();
+        return Value.ToString();
     }
 
     public static InetCidr6 Parse(string s)

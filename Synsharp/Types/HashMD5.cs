@@ -8,7 +8,7 @@ public class HashMD5: Hex
     {
     }
     
-    public static implicit operator string(HashMD5 d) => d._value;
+    public static implicit operator string(HashMD5 d) => d.Value;
     public static implicit operator HashMD5(string d) => new HashMD5(d);
     
     public static HashMD5 Convert(object o)

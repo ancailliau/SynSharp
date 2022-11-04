@@ -16,14 +16,34 @@
 
 using System;
 using System.Net;
+using Newtonsoft.Json;
 
 namespace Synsharp.Types;
 
+public class InetIPv4Converter : JsonConverter
+{
+    public override void WriteJson(JsonWriter writer, object value, JsonSerializer serializer)
+    {
+        writer.WriteValue(((InetIPv4)value).Value.ToString());
+    }
+
+    public override object ReadJson(JsonReader reader, Type objectType, object existingValue, JsonSerializer serializer)
+    {
+        return Str.Parse((string)reader.Value);
+    }
+
+    public override bool CanConvert(Type objectType)
+    {
+        return objectType == typeof(InetIPv4);
+    }
+}
+
+[JsonConverter(typeof(InetIPv4Converter))]
 public class InetIPv4 : SynapseType
 {
     protected bool Equals(InetIPv4 other)
     {
-        return Equals(_value, other._value);
+        return Equals(Value, other.Value);
     }
 
     public override bool Equals(object obj)
@@ -36,31 +56,32 @@ public class InetIPv4 : SynapseType
 
     public override int GetHashCode()
     {
-        return (_value != null ? _value.GetHashCode() : 0);
+        return (Value != null ? Value.GetHashCode() : 0);
     }
 
-    private IPAddress _value;
+    public IPAddress Value { get; }
+
     private InetIPv4(IPAddress value)
     {
-        _value = value;
+        Value = value;
     }
 
-    public static implicit operator IPAddress(InetIPv4 d) => d._value;
+    public static implicit operator IPAddress(InetIPv4 d) => d.Value;
     public static implicit operator InetIPv4(IPAddress d) => new InetIPv4(d);
 
     public override string ToString()
     {
-        return _value.ToString();
+        return Value.ToString();
     }
 
     public override string GetEscapedCoreValue()
     {
-        return _value.ToString();
+        return Value.ToString();
     }
 
     public override string GetCoreValue()
     {
-        return _value.ToString();
+        return Value.ToString();
     }
 
     public static InetIPv4 Parse(string s)

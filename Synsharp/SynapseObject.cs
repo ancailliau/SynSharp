@@ -39,6 +39,26 @@ public abstract class SynapseObject
 
     public abstract string GetEscapedCoreValue();
     public abstract string GetCoreValue();
+
+    // TODO This is super inefficient
+    public Dictionary<string, object> GetProperties()
+    {
+        return this.GetType().GetProperties()
+            .Select(_ =>
+            {
+                var attribute = _.GetCustomAttribute<SynapsePropertyAttribute>();
+                return new { Property = _, Attribute = attribute };
+            })
+            .Where(_ => _.Attribute != null)
+            .Select(_ =>
+            {
+                var propertyName = _.Attribute.Name;
+                var propertyValue = _.Property.GetValue(this);
+                return new KeyValuePair<string, object>(propertyName, propertyValue);
+            })
+            .Where(_ => _.Value != null)
+            .ToDictionary(pair => pair.Key, pair => pair.Value);
+    }
 }
 
 /// <summary>

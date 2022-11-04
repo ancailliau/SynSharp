@@ -15,54 +15,74 @@
  */
 
 using System;
+using Newtonsoft.Json;
 
 namespace Synsharp.Types;
 
+public class IntConverter : JsonConverter
+{
+    public override void WriteJson(JsonWriter writer, object value, JsonSerializer serializer)
+    {
+        writer.WriteValue(((Int)value).Value.ToString());
+    }
+
+    public override object ReadJson(JsonReader reader, Type objectType, object existingValue, JsonSerializer serializer)
+    {
+        return Str.Parse((string)reader.Value);
+    }
+
+    public override bool CanConvert(Type objectType)
+    {
+        return objectType == typeof(Int);
+    }
+}
+
+[JsonConverter(typeof(IntConverter))]
 public class Int : SynapseType
 {
-    protected long _value;
+    public long Value { get; }
 
     protected bool Equals(Int other)
     {
-        return _value == other._value;
+        return Value == other.Value;
     }
 
     public override bool Equals(object obj)
     {
         if (ReferenceEquals(null, obj)) return false;
         if (ReferenceEquals(this, obj)) return true;
-        if (obj is int i) return _value == i;
-        if (obj is long l) return _value == l;
+        if (obj is int i) return Value == i;
+        if (obj is long l) return Value == l;
         if (obj.GetType() != this.GetType()) return false;
         return Equals((Int)obj);
     }
 
     public override int GetHashCode()
     {
-        return _value.GetHashCode();
+        return Value.GetHashCode();
     }
 
     protected Int(long value)
     {
-        _value = value;
+        Value = value;
     }
-    public static implicit operator long(Int d) => d._value;
+    public static implicit operator long(Int d) => d.Value;
     public static implicit operator Int(long d) => new Int(d);
     public static implicit operator Int(int d) => new Int(d);
     
     public override string ToString()
     {
-        return _value.ToString();
+        return Value.ToString();
     }
 
     public override string GetEscapedCoreValue()
     {
-        return _value.ToString();
+        return Value.ToString();
     }
 
     public override string GetCoreValue()
     {
-        return _value.ToString();
+        return Value.ToString();
     }
 
     public static Int Parse(string s)

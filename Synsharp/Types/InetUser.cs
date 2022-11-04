@@ -8,7 +8,7 @@ public class InetUser : Str
     {
     }
 
-    public static implicit operator string(InetUser d) => d._value;
+    public static implicit operator string(InetUser d) => d.Value;
     public static implicit operator InetUser(string d) => new InetUser(d);
 
     public static InetUser Parse(string s)

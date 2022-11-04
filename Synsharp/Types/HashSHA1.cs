@@ -8,7 +8,7 @@ public class HashSHA1: Hex
     {
     }
     
-    public static implicit operator string(HashSHA1 d) => d._value;
+    public static implicit operator string(HashSHA1 d) => d.Value;
     public static implicit operator HashSHA1(string d) => new HashSHA1(d);
     
     public static HashSHA1 Convert(object o)

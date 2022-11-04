@@ -14,32 +14,55 @@
  * limitations under the License.
  */
 
+using System;
+using Newtonsoft.Json;
+
 namespace Synsharp.Types;
 
-public class Float : SynapseType
+public class FloatConverter : JsonConverter
 {
-    private float _value;
-    private Float(float value)
+    public override void WriteJson(JsonWriter writer, object value, JsonSerializer serializer)
     {
-        _value = value;
+        writer.WriteValue(((Float)value).Value);
     }
 
-    public static implicit operator float(Float d) => d._value;
+    public override object ReadJson(JsonReader reader, Type objectType, object existingValue, JsonSerializer serializer)
+    {
+        return Str.Parse((string)reader.Value);
+    }
+
+    public override bool CanConvert(Type objectType)
+    {
+        return objectType == typeof(Float);
+    }
+}
+
+[JsonConverter(typeof(FloatConverter))]
+public class Float : SynapseType
+{
+    public float Value { get; }
+
+    private Float(float value)
+    {
+        Value = value;
+    }
+
+    public static implicit operator float(Float d) => d.Value;
     public static implicit operator Float(float d) => new Float(d);
 
     public override string ToString()
     {
-        return _value.ToString();
+        return Value.ToString();
     }
 
     public override string GetEscapedCoreValue()
     {
-        return _value.ToString();
+        return Value.ToString();
     }
 
     public override string GetCoreValue()
     {
-        return _value.ToString();
+        return Value.ToString();
     }
 
     public static Float Parse(string s)

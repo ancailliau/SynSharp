@@ -15,14 +15,34 @@
  */
 
 using System;
+using Newtonsoft.Json;
 
 namespace Synsharp.Types;
 
+public class BoolConverter : JsonConverter
+{
+    public override void WriteJson(JsonWriter writer, object value, JsonSerializer serializer)
+    {
+        writer.WriteValue(((Bool)value).Value);
+    }
+
+    public override object ReadJson(JsonReader reader, Type objectType, object existingValue, JsonSerializer serializer)
+    {
+        return Str.Parse((string)reader.Value);
+    }
+
+    public override bool CanConvert(Type objectType)
+    {
+        return objectType == typeof(Bool);
+    }
+}
+
+[JsonConverter(typeof(BoolConverter))]
 public class Bool : SynapseType
 {
     protected bool Equals(Bool other)
     {
-        return _value == other._value;
+        return Value == other.Value;
     }
 
     public override bool Equals(object obj)
@@ -35,31 +55,32 @@ public class Bool : SynapseType
 
     public override int GetHashCode()
     {
-        return _value.GetHashCode();
+        return Value.GetHashCode();
     }
 
-    private bool _value;
+    public bool Value { get; }
+
     private Bool(bool value)
     {
-        _value = value;
+        Value = value;
     }
 
-    public static implicit operator bool(Bool d) => d._value;
+    public static implicit operator bool(Bool d) => d.Value;
     public static implicit operator Bool(bool d) => new Bool(d);
 
     public override string ToString()
     {
-        return _value ? "True" : "False";
+        return Value ? "True" : "False";
     }
 
     public override string GetEscapedCoreValue()
     {
-        return _value ? "1" : "0";
+        return Value ? "1" : "0";
     }
 
     public override string GetCoreValue()
     {
-        return _value ? "1" : "0";
+        return Value ? "1" : "0";
     }
 
     public static Bool Parse(string s)

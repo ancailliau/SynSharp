@@ -15,33 +15,55 @@
  */
 
 using System;
+using Newtonsoft.Json;
 
 namespace Synsharp.Types;
 
-public class Time : SynapseType
+
+public class TimeConverter : JsonConverter
 {
-    private DateTime _value;
-    private Time(DateTime value)
+    public override void WriteJson(JsonWriter writer, object value, JsonSerializer serializer)
     {
-        _value = value;
+        writer.WriteValue(((Time)value).Value.ToString());
     }
 
-    public static implicit operator DateTime(Time d) => d._value;
+    public override object ReadJson(JsonReader reader, Type objectType, object existingValue, JsonSerializer serializer)
+    {
+        return Str.Parse((string)reader.Value);
+    }
+
+    public override bool CanConvert(Type objectType)
+    {
+        return objectType == typeof(Time);
+    }
+}
+
+[JsonConverter(typeof(TimeConverter))]
+public class Time : SynapseType
+{
+    public DateTime Value { get; }
+
+    private Time(DateTime value)
+    {
+        Value = value;
+    }
+
+    public static implicit operator DateTime(Time d) => d.Value;
     public static implicit operator Time(DateTime d) => new Time(d);
 
     public override string ToString()
     {
-        return _value.ToString();
+        return Value.ToString();
     }
 
     public override string GetEscapedCoreValue()
     {
-        return _value.ToString();
+        return Value.ToString();
     }
 
     public override string GetCoreValue()
     {
-        return _value.ToString();
+        return Value.ToString();
     }
 
     public static Time Parse(DateTime s)

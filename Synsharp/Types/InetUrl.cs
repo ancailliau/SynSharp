@@ -15,14 +15,34 @@
  */
 
 using System;
+using Newtonsoft.Json;
 
 namespace Synsharp.Types;
 
+public class InetUrlConverter : JsonConverter
+{
+    public override void WriteJson(JsonWriter writer, object value, JsonSerializer serializer)
+    {
+        writer.WriteValue(((InetUrl)value).Value.ToString());
+    }
+
+    public override object ReadJson(JsonReader reader, Type objectType, object existingValue, JsonSerializer serializer)
+    {
+        return Str.Parse((string)reader.Value);
+    }
+
+    public override bool CanConvert(Type objectType)
+    {
+        return objectType == typeof(InetUrl);
+    }
+}
+
+[JsonConverter(typeof(InetUrlConverter))]
 public class InetUrl : SynapseType
 {
     protected bool Equals(InetUrl other)
     {
-        return Equals(_value, other._value);
+        return Equals(Value, other.Value);
     }
 
     public override bool Equals(object obj)
@@ -35,31 +55,32 @@ public class InetUrl : SynapseType
 
     public override int GetHashCode()
     {
-        return (_value != null ? _value.GetHashCode() : 0);
+        return (Value != null ? Value.GetHashCode() : 0);
     }
 
-    private Uri _value;
+    public Uri Value { get; }
+
     private InetUrl(Uri value)
     {
-        _value = value;
+        Value = value;
     }
 
-    public static implicit operator Uri(InetUrl d) => d._value;
+    public static implicit operator Uri(InetUrl d) => d.Value;
     public static implicit operator InetUrl(Uri d) => new InetUrl(d);
 
     public override string ToString()
     {
-        return _value.ToString();
+        return Value.ToString();
     }
 
     public override string GetEscapedCoreValue()
     {
-        return StringHelpers.Escape(_value.ToString());
+        return StringHelpers.Escape(Value.ToString());
     }
 
     public override string GetCoreValue()
     {
-        return _value.ToString();
+        return Value.ToString();
     }
 
     public static InetUrl Parse(string s)

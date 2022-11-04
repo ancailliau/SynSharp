@@ -8,7 +8,7 @@ public class InetPort : Int
     {
     }
     
-    public static implicit operator long(InetPort d) => d._value;
+    public static implicit operator long(InetPort d) => d.Value;
     public static implicit operator InetPort(long d) => new InetPort(d);
 
     public static InetPort Parse(string s)

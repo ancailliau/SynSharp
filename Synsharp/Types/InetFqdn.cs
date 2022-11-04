@@ -1,51 +1,71 @@
 using System;
+using Newtonsoft.Json;
 
 namespace Synsharp.Types;
 
+public class InetFqdnConverter : JsonConverter
+{
+    public override void WriteJson(JsonWriter writer, object value, JsonSerializer serializer)
+    {
+        writer.WriteValue(((InetFqdn)value).Value.ToString());
+    }
+
+    public override object ReadJson(JsonReader reader, Type objectType, object existingValue, JsonSerializer serializer)
+    {
+        return Str.Parse((string)reader.Value);
+    }
+
+    public override bool CanConvert(Type objectType)
+    {
+        return objectType == typeof(InetFqdn);
+    }
+}
+
+[JsonConverter(typeof(InetFqdnConverter))]
 public class InetFqdn : SynapseType
 {
-    private string _value;
-    
+    public string Value { get; }
+
     public InetFqdn(string value)
     {
-        _value = value;
+        Value = value;
     }
 
     protected bool Equals(InetFqdn other)
     {
-        return _value == other._value;
+        return Value == other.Value;
     }
 
     public override bool Equals(object obj)
     {
         if (ReferenceEquals(null, obj)) return false;
         if (ReferenceEquals(this, obj)) return true;
-        if (obj is string s) return _value == s;
+        if (obj is string s) return Value == s;
         if (obj.GetType() != this.GetType()) return false;
         return Equals((InetFqdn)obj);
     }
 
     public override int GetHashCode()
     {
-        return (_value != null ? _value.GetHashCode() : 0);
+        return (Value != null ? Value.GetHashCode() : 0);
     }
 
-    public static implicit operator string(InetFqdn d) => d._value;
+    public static implicit operator string(InetFqdn d) => d.Value;
     public static implicit operator InetFqdn(string d) => new InetFqdn(d);
 
     public override string ToString()
     {
-        return _value;
+        return Value;
     }
 
     public override string GetEscapedCoreValue()
     {
-        return _value;
+        return Value;
     }
 
     public override string GetCoreValue()
     {
-        return _value.ToString();
+        return Value.ToString();
     }
 
     public static InetFqdn Parse(string s)

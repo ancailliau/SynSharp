@@ -15,33 +15,54 @@
  */
 
 using System;
+using Newtonsoft.Json;
 
 namespace Synsharp.Types;
 
-public class InetAddr : SynapseType
+public class InetAddrConverter : JsonConverter
 {
-    private Uri _value;
-    private InetAddr(Uri value)
+    public override void WriteJson(JsonWriter writer, object value, JsonSerializer serializer)
     {
-        _value = value;
+        writer.WriteValue(((InetAddr)value).Value.ToString());
     }
 
-    public static implicit operator Uri(InetAddr d) => d._value;
+    public override object ReadJson(JsonReader reader, Type objectType, object existingValue, JsonSerializer serializer)
+    {
+        return Str.Parse((string)reader.Value);
+    }
+
+    public override bool CanConvert(Type objectType)
+    {
+        return objectType == typeof(InetAddr);
+    }
+}
+
+[JsonConverter(typeof(InetAddrConverter))]
+public class InetAddr : SynapseType
+{
+    public Uri Value { get; }
+
+    private InetAddr(Uri value)
+    {
+        Value = value;
+    }
+
+    public static implicit operator Uri(InetAddr d) => d.Value;
     public static implicit operator InetAddr(Uri d) => new InetAddr(d);
 
     public override string ToString()
     {
-        return _value.ToString();
+        return Value.ToString();
     }
 
     public override string GetEscapedCoreValue()
     {
-        return _value.ToString();
+        return Value.ToString();
     }
 
     public override string GetCoreValue()
     {
-        return _value.ToString();
+        return Value.ToString();
     }
 
     public static InetAddr Parse(string s)
