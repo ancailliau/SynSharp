@@ -33,7 +33,7 @@ namespace Synsharp;
 public abstract class SynapseObject
 {
     [SynapseProperty(".created")] public Time Created { set; get; }
-    [SynapseProperty("iden")] public Str Iden { set; get; }
+    [SynapseProperty("iden", ReadOnly = true)] public Str Iden { set; get; }
 
     public TagTree Tags { get; set; } = new();
 

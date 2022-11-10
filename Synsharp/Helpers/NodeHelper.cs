@@ -110,7 +110,7 @@ public class NodeHelper
         foreach (var field in fields)
         {
             var propertyAttribute = field.GetCustomAttribute<SynapsePropertyAttribute>();
-            if (propertyAttribute != null && !propertyAttribute.Name.StartsWith("."))
+            if (propertyAttribute != null && !propertyAttribute.Name.StartsWith(".") && !propertyAttribute.ReadOnly)
             {
                 var val = field.GetValue(synapseObject);
                 if (val != null && val is SynapseType sval)
@@ -200,6 +200,16 @@ public class NodeHelper
         return (type, val);
     }
     
+    public async Task AddLightEdge(SynapseLightEdge edge, string view = null)
+    {
+        var commands = new List<string>();
+        var (t1, v1) = GetSelector(edge.Source);
+        var (t2, v2) = GetSelector(edge.Target);
+        commands.Add($"{t1}={v1} [ +({edge.Verb})> {{ {t2}={v2} }} ]");
+        _ = await _synapseClient.StormAsync<object>(string.Join(" ", commands), new ApiStormQueryOpts(){View= view}).ToListAsync();
+    }
+
+    
     public async Task AddLightEdge(IEnumerable<SynapseLightEdge> edges, string view = null)
     {
         var commands = new List<string>();
@@ -221,6 +231,15 @@ public class NodeHelper
 
         var command = $"{t1}={v1} [ +({@ref})> {{ {t2}={v2} }} ]";
         _ = await _synapseClient.StormAsync<object>(command, new ApiStormQueryOpts(){View= view}).ToListAsync();
+    }
+    
+    public async Task RemoveLightEdge(SynapseLightEdge edge, string view = null)
+    {
+        var commands = new List<string>();
+        var (t1, v1) = GetSelector(edge.Source);
+        var (t2, v2) = GetSelector(edge.Target);
+        commands.Add($"{t1}={v1} [ -({edge.Verb})> {{ {t2}={v2} }} ]");
+        _ = await _synapseClient.StormAsync<object>(string.Join(" ", commands), new ApiStormQueryOpts(){View= view}).ToListAsync();
     }
 
     public async Task RemoveLightEdge(SynapseObject o1, SynapseObject o2, string @ref, string view = null)

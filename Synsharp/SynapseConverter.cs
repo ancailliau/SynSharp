@@ -186,7 +186,7 @@ public class SynapseConverter
             foreach (var field in fields)
             {
                 var attribute = field.GetCustomAttribute<SynapsePropertyAttribute>();
-                if (attribute != null && !attribute.ReadOnly)
+                if (attribute != null)
                 {
                     _cachedField[type].Add(attribute.Name, field);
                 }
@@ -197,7 +197,7 @@ public class SynapseConverter
             foreach (var property in properties)
             {
                 var attribute = property.GetCustomAttribute<SynapsePropertyAttribute>();
-                if (attribute != null && !attribute.ReadOnly)
+                if (attribute != null)
                 {
                     _cachedProperty[type].Add(attribute.Name, property);
                 }
