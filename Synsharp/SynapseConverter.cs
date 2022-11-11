@@ -99,7 +99,7 @@ public class SynapseConverter
             if (instance != null)
             {
                 SetValue(type, coreValue, instance);
-                Console.WriteLine("Meta?" + meta);
+                // Console.WriteLine("Meta?" + meta);
                 if (meta != null) SetMetadata(type, meta, instance);
 
                 return instance;
@@ -137,20 +137,18 @@ public class SynapseConverter
         {
             ((SynapseObject)i).Tags.Add(kv.Key);
         }
-
-        Console.WriteLine("Meta props");
+// Console.WriteLine("Meta props");
         foreach (var kv in metaObj.Props)
         {
-            Console.WriteLine("Meta prop " + kv.Key + (kv.Value is JToken ? "trye" : "false"));
+// Console.WriteLine("Meta prop " + kv.Key + (kv.Value is JToken ? "trye" : "false"));
             if (kv.Value is JToken jToken)
                 SetFormProperty(i, kv.Key, ConvertFromJTokenTypeToBaseType(jToken));       
             else
                 SetFormProperty(i, kv.Key, kv.Value);
         }
-
-        Console.WriteLine("-- iden" + metaObj.Iden);
+// Console.WriteLine("-- iden" + metaObj.Iden);
         SetFormProperty(i, "iden", metaObj.Iden);
-        Console.WriteLine("-- iden" + i.GetType().GetProperty("Iden").GetValue(i));
+// Console.WriteLine("-- iden" + i.GetType().GetProperty("Iden").GetValue(i));
 
         var pathContainer = metaObj.Path;
         // TODO Path
@@ -168,12 +166,12 @@ public class SynapseConverter
         {
             var fieldInfo = _cachedProperty[type][key];
             var convert = Convert(value.GetType(), fieldInfo.PropertyType, value);
-            Console.WriteLine($"will set property to {convert} ({convert.GetType().FullName})");
+// Console.WriteLine($"will set property to {convert} ({convert.GetType().FullName})");
             fieldInfo.SetValue(instance, convert);
         }
         else
         {
-            Console.WriteLine($"Property '{key}' is not known");
+// Console.WriteLine($"Property '{key}' is not known");
         }
     }
 
