@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
     <PropertyGroup>
-        <TargetFramework>net6.0</TargetFramework>
+        <TargetFramework>net7.0</TargetFramework>
         <AssemblyName>Synsharp</AssemblyName>
         <RootNamespace>Synsharp</RootNamespace>
         <PackageId>Synsharp</PackageId>
@@ -19,10 +19,10 @@
     </PropertyGroup>
 
     <ItemGroup>
-      <PackageReference Include="IPNetwork2" Version="2.6.472" />
-      <PackageReference Include="Microsoft.Extensions.Logging" Version="6.0.0" />
-      <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="6.0.1" />
-      <PackageReference Include="Microsoft.Extensions.Logging.Console" Version="6.0.0" />
+      <PackageReference Include="IPNetwork2" Version="2.6.508" />
+      <PackageReference Include="Microsoft.Extensions.Logging" Version="7.0.0" />
+      <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="7.0.0" />
+      <PackageReference Include="Microsoft.Extensions.Logging.Console" Version="7.0.0" />
       <PackageReference Include="Newtonsoft.Json" Version="13.0.1" />
       <PackageReference Include="System.Linq.Async" Version="6.0.1" />
     </ItemGroup>
