@@ -12,6 +12,7 @@
     </ItemGroup>
 
     <ItemGroup>
+      <ProjectReference Include="..\Synsharp.Telepath\Synsharp.Telepath.csproj" />
       <ProjectReference Include="..\Synsharp\Synsharp.csproj" />
     </ItemGroup>
 
