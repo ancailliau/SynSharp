@@ -40,7 +40,7 @@ public class Proxy : IDisposable
     public dynamic Methinfo { get; private set; }
     public int LinkPoolSize { get; set; }
 
-    public int[] SynVers => _sharinfo["syn:version"].Cast<long>().ToArray();
+    public byte[] SynVers => ((object[])_sharinfo["syn:version"]).Select(_ => (System.Byte) _).ToArray();
     public string SynCommit => (string)_sharinfo["syn:commit"];
     public string[] Classes => _sharinfo["classes"].Cast<string>().ToArray();
     public bool IsFini { get; private set; }
