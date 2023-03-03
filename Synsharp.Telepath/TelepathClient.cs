@@ -154,9 +154,9 @@ public class TelepathClient : IDisposable
             await Ready.WaitAsync();
     }
 
-    public async Task<Proxy> GetProxyAsync()
+    public async Task<Proxy> GetProxyAsync(TimeSpan? timeout = null)
     {
-        await Ready.WaitAsync();
+        await WaitReady(timeout);
         if (_proxy != null && !_proxy.IsFini) return _proxy;
         throw new SynsharpException();
     }
