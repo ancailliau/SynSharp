@@ -18,11 +18,12 @@ internal class Link : IDisposable
     private readonly string _host;
     private readonly int _port;
     private readonly ILogger? _logger;
-    private Socket? _socket;
     private readonly Channel<dynamic> _rxqu;
     
     private CancellationTokenSource _cancellationTokenSource;
     private bool _isFini = false;
+    private TcpClient _tcpClient;
+    private NetworkStream _stream;
     public event EventHandler? OnFini;
 
     private Link(string host, int port, ILogger? logger = null)
@@ -50,17 +51,14 @@ internal class Link : IDisposable
         var ipAddress = ipHostInfo.AddressList[0];
         var ipEndPoint = new IPEndPoint(ipAddress, _port);
         
-        _socket = new Socket(
-            ipEndPoint.AddressFamily, 
-            SocketType.Stream,
-            ProtocolType.Tcp);
-        
-        await _socket.ConnectAsync(ipEndPoint);
+        _tcpClient = new TcpClient();
+        await _tcpClient.ConnectAsync(ipEndPoint);
+        _stream = _tcpClient.GetStream();
         _logger?.LogTrace("Socket is created");
         
         _logger?.LogDebug("Create the pipeline to read data from socket.");
         var pipe = new Pipe();
-        Task writing = FillPipeAsync(_socket, pipe.Writer, _cancellationTokenSource.Token);
+        Task writing = FillPipeAsync(_stream, pipe.Writer, _cancellationTokenSource.Token);
         Task reading = ReadPipeAsync(pipe.Reader, _cancellationTokenSource.Token);
     }
 
@@ -75,8 +73,8 @@ internal class Link : IDisposable
 
         byte[] bytes = MessagePackSerializer.Serialize(telepathMessage);
         _logger?.LogTrace($"Sending message ({bytes.Length} bytes)");
-        var bytesSent = await _socket.SendAsync(bytes, SocketFlags.None, _cancellationTokenSource.Token);
-        _logger?.LogTrace($"Sent {bytesSent} bytes");
+        await _stream.WriteAsync(bytes, _cancellationTokenSource.Token);
+        _logger?.LogTrace($"Sent {bytes.Length} bytes");
     }
 
     public async Task<dynamic> Rx()
@@ -128,7 +126,7 @@ internal class Link : IDisposable
         await reader.CompleteAsync();
     }
     
-    async Task FillPipeAsync(Socket socket, PipeWriter writer, CancellationToken cancellationToken)
+    async Task FillPipeAsync(NetworkStream stream, PipeWriter writer, CancellationToken cancellationToken)
     {
         const int minimumBufferSize = 512;
 
@@ -137,9 +135,10 @@ internal class Link : IDisposable
             _logger?.LogTrace("Starting pipeline filling loop");
             // Allocate at least 512 bytes from the PipeWriter
             Memory<byte> memory = writer.GetMemory(minimumBufferSize);
-            try 
+            try
             {
-                int bytesRead = await socket.ReceiveAsync(memory, SocketFlags.None, cancellationToken);
+                int bytesRead = await stream.ReadAsync(memory, cancellationToken);
+                // int bytesRead = await socket.ReceiveAsync(memory, SocketFlags.None, cancellationToken);
                 if (bytesRead == 0)
                 {
                     _logger?.LogTrace("Read 0 bytes, done.");
@@ -187,11 +186,11 @@ internal class Link : IDisposable
         
         _logger?.LogTrace("Closing link");
         _cancellationTokenSource.Cancel();
-        if (_socket != null)
+        if (_tcpClient != null)
         {
-            _logger?.LogTrace("Disposing socket");
-            _socket.Shutdown(SocketShutdown.Both);
-            _socket.Dispose();
+            _logger?.LogTrace("Disposing tcpClient");
+            _tcpClient.Close();
+            _tcpClient.Dispose();
         }
 
         OnFini?.Invoke(this, EventArgs.Empty);
