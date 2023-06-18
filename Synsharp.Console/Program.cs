@@ -24,7 +24,7 @@ public static class Program
         
         AnsiConsole.Markup("[underline red]Welcome to Synsharp Console[/]\n");
 
-        using var client = new TelepathClient("tcp://root:secret@localhost:8903/", loggerFactory: loggerFactory);
+        using var client = new TelepathClient("tcp://root:secret@localhost:27492/", loggerFactory: loggerFactory);
         client.OnLinked += async (sender, eventArgs) =>
         {
             AnsiConsole.MarkupLine("[bold green]Client is connected.[/]");
