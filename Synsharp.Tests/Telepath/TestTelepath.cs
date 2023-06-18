@@ -12,7 +12,7 @@ namespace Synsharp.Tests;
 
 public class TestTelepath
 {
-    protected Client? SynapseClient;
+    protected TelepathClient? SynapseClient;
     private TestcontainersContainer? _testContainers;
     private ILoggerFactory _loggerFactory;
 
@@ -22,7 +22,7 @@ public class TestTelepath
         var builder = new TestcontainersBuilder<TestcontainersContainer>()
             .WithImage("vertexproject/synapse-cortex:v2.x.x")
             .WithName("synpase")
-            .WithPortBinding(8901, 4443)
+            .WithPortBinding(8903, 27492)
             .WithEnvironment("SYN_CORTEX_AUTH_PASSWD", "secret")
             .WithWaitStrategy(Wait.ForUnixContainer().UntilPortIsAvailable(4443));
         
@@ -34,8 +34,16 @@ public class TestTelepath
             builder.SetMinimumLevel(LogLevel.Trace);
             builder.AddConsole(options => options.DisableColors = true);
         });
-        
-        SynapseClient = new Client("tcp://root:secret@localhost:8903/", TODO, _loggerFactory);
+
+        var proxyOptions = new ProxyOptions()
+        {
+            
+        };
+        var clientConfiguration = new ClientConfiguration()
+        {
+            
+        };
+        SynapseClient = new TelepathClient("tcp://root:secret@localhost:8903/", proxyOptions, clientConfiguration, _loggerFactory);
     }
 
     [TearDown]
