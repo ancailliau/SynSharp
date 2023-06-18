@@ -7,7 +7,7 @@ namespace Synsharp.Telepath;
 public class TeleSynRequest
 {
     [Key("auth")]
-    public Auth Auth { get; set; }
+    public Auth? Auth { get; set; }
     [Key("vers")]
     public int[] Vers { get; set; }
     [Key("name")]

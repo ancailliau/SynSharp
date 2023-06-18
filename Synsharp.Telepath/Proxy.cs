@@ -1,4 +1,5 @@
 using System.Collections.Concurrent;
+using System.Security.Cryptography.X509Certificates;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using Synsharp.Telepath.Messages;
@@ -15,16 +16,17 @@ public class Proxy : IDisposable
     private readonly ProxyOptions? _options;
 
     private readonly Dictionary<string, TelepathTask> _tasks = new();
-    private readonly Uri _url;
-
+    
     private string? _iden; // TODO
     private Link? _link;
     private string _sess;
     private dynamic _sharinfo;
 
-    private Proxy(Uri url, ProxyOptions? options, ILoggerFactory? loggerFactory = null)
+    private Proxy(Link link, ProxyOptions? options, ILoggerFactory? loggerFactory = null)
     {
-        _url = url;
+        _link = link;
+        _link.OnFini += OnLinkFini;
+        
         _options = options;
         _loggerFactory = loggerFactory;
         _logger = _loggerFactory?.CreateLogger<Proxy>();
@@ -110,7 +112,7 @@ public class Proxy : IDisposable
 
     private async Task<Link> InitPoolLink()
     {
-        var link = await Link.Connect(_url.Host, _url.Port, _loggerFactory?.CreateLogger<Link>());
+        var link = await Link.Connect(_link.Host, _link.Port, _link.LinkInfo, _loggerFactory?.CreateLogger<Link>());
         link.OnFini += OnLinkFini;
         return link;
     }
@@ -165,14 +167,6 @@ public class Proxy : IDisposable
         }
     }
 
-    private async Task ConnectAsync()
-    {
-        _link = await GetPoolLink();
-        _link.OnFini += OnLinkFini;
-
-        _logger?.LogTrace("Link connected");
-    }
-
     public static Task<Proxy> OpenUrlAsync(string url, ProxyOptions? options = null,
         ILoggerFactory? loggerFactory = null)
     {
@@ -182,29 +176,108 @@ public class Proxy : IDisposable
     public static async Task<Proxy> OpenUrlAsync(Uri url, ProxyOptions? options = null,
         ILoggerFactory? loggerFactory = null)
     {
-        var proxy = new Proxy(url, options, loggerFactory);
-        await proxy.ConnectAsync();
+        var scheme = url.Scheme;
+
+        if (scheme == "aha")
+        {
+            throw new NotImplementedException("AHA urls are not (yet) supported");
+        }
+        
+        if (scheme.Contains("+")) {
+            var splittedScheme = scheme.Split('+', 1);
+            if (splittedScheme.Length > 1 && splittedScheme[1] == "consul")
+            {
+                throw new NotSupportedException("Consul is no longer supported.");
+
+            }
+            else
+            {
+                throw new Exception("Unknown discovery protocol {scheme}");
+            }
+        }
+
+        var host = url.Host;
+        var port = url.Port;
+
+        string username = null;
+        string password = null;
+
+        LinkInfo linkInfo = null;
+        Auth auth = null;
+        if (url.UserInfo != null)
+        {
+            var userinfo = url.UserInfo.Split(':', 2);
+            username = userinfo.Length >= 1 ? userinfo[0] : string.Empty;
+            password = userinfo.Length >= 2 ? userinfo[1] : string.Empty;
+
+            auth = new Auth { User = username, Params = new Dictionary<string, string> { { "passwd", password } } };
+        }
+
+        Link link;
+        if (scheme == "cell")
+        {
+            throw new NotImplementedException("Schema cell:// is not supported");
+        }
+        else if (scheme == "unix")
+        {
+            throw new NotImplementedException("Schema unix:// is not supported");
+        }
+        else
+        {
+            var path = url.AbsolutePath;
+            var name = Path.GetPathRoot(path);
+
+            if (port == null)
+                port = 27492;
+
+            if (scheme == "ssl")
+            {
+                var certDir = options.CertDir;
+                var certHash = "";
+                var certName = options.CertName;
+                var hostname = options.HostName ?? host;
+                
+                // if a TLS connection specifies a user with no password attempt to auto-resolve a user certificate for the given host/network.
+                if (string.IsNullOrEmpty(certName) && !string.IsNullOrEmpty(username) && string.IsNullOrEmpty(password))
+                {
+                    certName = $"{username}@{hostname}";
+                }
+
+                linkInfo = new LinkInfo();
+                if (string.IsNullOrEmpty(certHash))
+                {
+                    var certificate = X509Certificate2.CreateFromPemFile(
+                            Path.Combine(certDir, "users", $"{certName}.crt"), 
+                            Path.Combine(certDir, "users", $"{certName}.key"));
+                    linkInfo.clientCertificates = new X509CertificateCollection(new X509Certificate[] { certificate });
+                    
+                }
+                else
+                {
+                    throw new NotSupportedException();
+                }
+            }
+
+            link = await Link.Connect(host, port, linkInfo, loggerFactory?.CreateLogger<Link>());
+        }
+        
+        var proxy = new Proxy(link, options, loggerFactory);
         await proxy.Handshake();
         return proxy;
     }
 
-    private async Task<dynamic?> Handshake()
+    private async Task<dynamic?> Handshake(Auth? auth = null)
     {
         if (_link == null) throw new SynsharpException("Link is not connected");
 
         _logger?.LogTrace("Proxy starts authentication");
 
-        // Send ["tele:syn",{"auth":["root",{"passwd":"secret"}],"vers":[3,0],"name":""}]
-        var userinfo = _url.UserInfo.Split(':', 2);
-        var username = userinfo.Length >= 1 ? userinfo[0] : string.Empty;
-        var password = userinfo.Length >= 2 ? userinfo[1] : string.Empty;
-        
         var obj = new TelepathMessage<TeleSynRequest>
         {
             Type = "tele:syn",
             Data = new TeleSynRequest
             {
-                Auth = new Auth { User = username, Params = new Dictionary<string, string> { { "passwd", password } } },
+                Auth = auth,
                 Vers = new[] { 3, 0 },
                 Name = ""
             }

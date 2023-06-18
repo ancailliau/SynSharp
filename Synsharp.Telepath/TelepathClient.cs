@@ -56,13 +56,14 @@ public class TelepathClient : IDisposable
                 var now = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
                 if (now > lastLog + 60L)
                 {
-                    _logger?.LogError($"telepath client ({UrlHelper.SanitizeUrl(url)}) encountered an error: {e.Message}");
+                    _logger?.LogError($"telepath client ({UrlHelper.SanitizeUrl(url)}) encountered an error ({e.GetType().Name}): {e.Message}\n{e.StackTrace}");
                     lastLog = now;
                 }
             }
 
-            _logger?.LogTrace($"Loop will sleep for {_configuration.RetrySleep} ms");
-            await System.Threading.Tasks.Task.Delay(_configuration.RetrySleep);
+            return;
+            //_logger?.LogTrace($"Loop will sleep for {_configuration.RetrySleep} ms");
+            //await System.Threading.Tasks.Task.Delay(_configuration.RetrySleep);
         }
     }
 

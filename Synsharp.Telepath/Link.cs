@@ -4,7 +4,10 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO.Pipelines;
 using System.Net;
+using System.Net.Security;
 using System.Net.Sockets;
+using System.Security.Authentication;
+using System.Security.Cryptography.X509Certificates;
 using System.Threading;
 using System.Threading.Tasks;
 using MessagePack;
@@ -17,19 +20,26 @@ internal class Link : IDisposable
 {
     private readonly string _host;
     private readonly int _port;
+    private readonly LinkInfo _linkInfo;
     private readonly ILogger? _logger;
     private readonly Channel<dynamic> _rxqu;
+
+    public LinkInfo LinkInfo => _linkInfo;
+    public string Host => _host;
+    public int Port => _port;
     
     private CancellationTokenSource _cancellationTokenSource;
     private bool _isFini = false;
     private TcpClient _tcpClient;
-    private NetworkStream _stream;
+    private Stream _stream;
+    
     public event EventHandler? OnFini;
 
-    private Link(string host, int port, ILogger? logger = null)
+    private Link(string host, int port, LinkInfo linkInfo, ILogger? logger = null)
     {
         _host = host;
         _port = port;
+        _linkInfo = linkInfo;
         _logger = logger;
         _rxqu = Channel.CreateUnbounded<dynamic>();
         _cancellationTokenSource = new CancellationTokenSource();
@@ -37,9 +47,9 @@ internal class Link : IDisposable
 
     public bool IsFini => _isFini;
 
-    public static async Task<Link> Connect(string host, int port, ILogger? logger = null)
+    public static async Task<Link> Connect(string host, int port, LinkInfo linkInfo, ILogger? logger = null)
     {
-        var link = new Link(host, port, logger);
+        var link = new Link(host, port, linkInfo, logger);
         await link.ConnectAsync();
         return link;
     }
@@ -47,19 +57,68 @@ internal class Link : IDisposable
     private async Task ConnectAsync()
     {
         _logger?.LogTrace("Start to connect the link");
-        var ipHostInfo = await Dns.GetHostEntryAsync(_host);
-        var ipAddress = ipHostInfo.AddressList[0];
-        var ipEndPoint = new IPEndPoint(ipAddress, _port);
+        _tcpClient = new TcpClient(_host, _port);
+        _logger?.LogTrace("Tcp client Connected");
+
+        if (LinkInfo.clientCertificates == null)
+        {
+            _logger?.LogTrace("Getting the stream");
+            _stream = _tcpClient.GetStream();   
+        }
+        else
+        {
+            // _stream = _tcpClient.GetStream();
+            _logger?.LogTrace("Will create the SSL stream");
         
-        _tcpClient = new TcpClient();
-        await _tcpClient.ConnectAsync(ipEndPoint);
-        _stream = _tcpClient.GetStream();
-        _logger?.LogTrace("Socket is created");
+            var _sslStream = new SslStream(
+                _tcpClient.GetStream(),
+                true,
+                new RemoteCertificateValidationCallback(ValidateServerCertificate),
+                null);
+
+            _logger?.LogTrace("Will authenticate");
         
-        _logger?.LogDebug("Create the pipeline to read data from socket.");
-        var pipe = new Pipe();
-        Task writing = FillPipeAsync(_stream, pipe.Writer, _cancellationTokenSource.Token);
-        Task reading = ReadPipeAsync(pipe.Reader, _cancellationTokenSource.Token);
+            // The server name must match the name on the server certificate.
+            try
+            {
+                _logger?.LogTrace($"Will authenticate as a client on {_host}");
+                await _sslStream.AuthenticateAsClientAsync(_host, LinkInfo.clientCertificates, SslProtocols.None, false);
+            
+                _logger?.LogTrace("Authenticated");
+            }
+            catch (AuthenticationException e)
+            {
+                _logger?.LogError("Exception: {0}", e.Message);
+                if (e.InnerException != null)
+                {
+                    _logger?.LogError("Inner exception: {0}", e.InnerException.Message);
+                }
+                _logger?.LogError("Authentication failed - closing the connection.");
+                _tcpClient.Close();
+            
+                return;
+            }
+            _stream = _sslStream;
+        }
+        
+        if (_stream != null)
+        {
+            _logger?.LogTrace("Socket is created");
+            _logger?.LogDebug("Create the pipeline to read data from socket.");
+            var pipe = new Pipe();
+            Task writing = FillPipeAsync(pipe.Writer, _cancellationTokenSource.Token);
+            Task reading = ReadPipeAsync(pipe.Reader, _cancellationTokenSource.Token);   
+        }
+    }
+
+    public bool ValidateServerCertificate(
+        object sender,
+        X509Certificate certificate,
+        X509Chain chain,
+        SslPolicyErrors sslPolicyErrors)
+    {
+        // TODO Check server certificate
+        return true;
     }
 
     public async Task Tx<T>(TelepathMessage<T> telepathMessage)
@@ -126,7 +185,7 @@ internal class Link : IDisposable
         await reader.CompleteAsync();
     }
     
-    async Task FillPipeAsync(NetworkStream stream, PipeWriter writer, CancellationToken cancellationToken)
+    async Task FillPipeAsync(PipeWriter writer, CancellationToken cancellationToken)
     {
         const int minimumBufferSize = 512;
 
@@ -137,7 +196,7 @@ internal class Link : IDisposable
             Memory<byte> memory = writer.GetMemory(minimumBufferSize);
             try
             {
-                int bytesRead = await stream.ReadAsync(memory, cancellationToken);
+                int bytesRead = await _stream.ReadAsync(memory, cancellationToken);
                 // int bytesRead = await socket.ReceiveAsync(memory, SocketFlags.None, cancellationToken);
                 if (bytesRead == 0)
                 {
