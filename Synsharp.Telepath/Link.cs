@@ -66,7 +66,13 @@ internal class Link : IDisposable
 
     public async Task Tx<T>(TelepathMessage<T> telepathMessage)
     {
-        if (_isFini) throw new SynsharpException();
+        _logger?.LogTrace($"Called Tx<T>");
+        if (_isFini)
+        {
+            _logger?.LogTrace("Tx isFini, throwing exception");
+            throw new SynsharpException();
+        }
+
         byte[] bytes = MessagePackSerializer.Serialize(telepathMessage);
         _logger?.LogTrace($"Sending message ({bytes.Length} bytes)");
         var bytesSent = await _socket.SendAsync(bytes, SocketFlags.None, _cancellationTokenSource.Token);
@@ -75,7 +81,13 @@ internal class Link : IDisposable
 
     public async Task<dynamic> Rx()
     {
-        if (_isFini) throw new SynsharpException();
+        _logger?.LogTrace($"Called Rx");
+        if (_isFini)
+        {
+            _logger?.LogTrace("Rx isFini, throwing exception");
+            throw new SynsharpException();
+        }
+
         return await _rxqu.Reader.ReadAsync(_cancellationTokenSource.Token);
     }
     

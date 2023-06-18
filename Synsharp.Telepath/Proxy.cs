@@ -198,6 +198,7 @@ public class Proxy : IDisposable
         var userinfo = _url.UserInfo.Split(':', 2);
         var username = userinfo.Length >= 1 ? userinfo[0] : string.Empty;
         var password = userinfo.Length >= 2 ? userinfo[1] : string.Empty;
+        
         var obj = new TelepathMessage<TeleSynRequest>
         {
             Type = "tele:syn",
@@ -208,13 +209,18 @@ public class Proxy : IDisposable
                 Name = ""
             }
         };
+        _logger?.LogTrace("TeleSynRequest: " + JsonConvert.SerializeObject(obj));
 
         _logger?.LogTrace("Send authentication request");
         await _link.Tx(obj);
 
         _logger?.LogTrace("Wait for reply from server");
         var res = await _link.Rx();
-        if (res == null) throw new SynsharpException("socket closed by server before handshake");
+        if (res == null)
+        {
+            _logger?.LogError("socket closed by server before handshake");
+            throw new SynsharpException("socket closed by server before handshake");
+        }
 
         _logger?.LogTrace("Proxy is now authenticated");
 
