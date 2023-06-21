@@ -159,7 +159,7 @@ public class TelepathClient : IDisposable
     {
         await WaitReady(timeout);
         if (_proxy != null && !_proxy.IsFini) return _proxy;
-        throw new SynsharpException();
+        throw new SynsharpException($"Could not get proxy {timeout}");
     }
     
     protected virtual void OnLink(EventArgs e)

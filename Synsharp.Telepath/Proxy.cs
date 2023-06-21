@@ -235,6 +235,22 @@ public class Proxy : IDisposable
                 var certDir = options.CertDir;
                 var certHash = "";
                 var certName = options.CertName;
+
+                while (!File.Exists(Path.Combine(certDir, "cas", $"{host}.crt")))
+                {
+                    // _logger?.LogTrace($"Testing for {Path.Combine(certDir, "cas", $"{host}.crt")} failed");
+                    if (host.Contains("."))
+                    {
+                        var split = host.Split('.', 2);
+                        if (split.Length > 1) host = split[1];
+                    }
+                    else
+                    {
+                        throw new SynsharpException("Could not find CA certifcate.");
+                    }
+                }
+                // _logger?.LogTrace($"Testing for {Path.Combine(certDir, "cas", $"{host}.crt")} succeed");
+                
                 var hostname = options.HostName ?? host;
                 
                 // if a TLS connection specifies a user with no password attempt to auto-resolve a user certificate for the given host/network.
