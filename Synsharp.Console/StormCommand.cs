@@ -48,7 +48,7 @@ public class StormCommand : AsyncCommand<StormCommand.Settings>
         string query;
         while (true)
         {
-            var proxy = await client.GetProxyAsync();
+            var proxy = await client.GetProxyAsync(TimeSpan.FromSeconds(10));
             
             var prompt = "storm> ";
             if (currentView != null)
