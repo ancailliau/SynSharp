@@ -42,15 +42,22 @@ public class TelepathClient : IDisposable
         while (!IsFini)
         {
             var url = GetNextUrl();
-            _logger?.LogTrace($"Will try to connect to {url}");
+            _logger?.LogTrace($"Will try to connect to {UrlHelper.SanitizeUrl(url)}");
             try
             {
                 await InitTeleLink(url);
                 Ready.Set();
-                _logger?.LogTrace($"Successfully connected to {url}");
+                _logger?.LogTrace($"Successfully connected to {UrlHelper.SanitizeUrl(url)}");
                 return;
             }
             // TODO: Redirect - self._setNextUrl(e.errinfo.get('url'))
+            catch (SynsharpException e)
+            {
+                _logger?.LogError($"telepath client ({UrlHelper.SanitizeUrl(url)}) encountered an error ({e.GetType().Name}): {e.Message}\n{e.StackTrace}");
+                Ready.Set();
+                IsFini = true;
+                return;
+            }
             catch (Exception e)
             {
                 var now = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
@@ -61,9 +68,8 @@ public class TelepathClient : IDisposable
                 }
             }
 
-            return;
-            //_logger?.LogTrace($"Loop will sleep for {_configuration.RetrySleep} ms");
-            //await System.Threading.Tasks.Task.Delay(_configuration.RetrySleep);
+            _logger?.LogTrace($"Loop will sleep for {_configuration.RetrySleep} ms");
+            await System.Threading.Tasks.Task.Delay(_configuration.RetrySleep);
         }
     }
 

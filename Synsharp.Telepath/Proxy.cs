@@ -337,7 +337,7 @@ public class Proxy : IDisposable
         else
         {
             _logger?.LogTrace("Proxy could not authenticate");
-            throw new SynsharpException("Unable to authenticate");
+            throw new SynsharpException(res[1]["retn"][1][0].ToString() + ": " + res[1]["retn"][1][1]["mesg"].ToString());
         }
     }
 
