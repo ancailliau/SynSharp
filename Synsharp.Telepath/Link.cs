@@ -60,7 +60,7 @@ internal class Link : IDisposable
         _tcpClient = new TcpClient(_host, _port);
         _logger?.LogTrace("Tcp client Connected");
 
-        if (LinkInfo.clientCertificates == null)
+        if (LinkInfo?.clientCertificates == null)
         {
             _logger?.LogTrace("Getting the stream");
             _stream = _tcpClient.GetStream();   

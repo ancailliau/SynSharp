@@ -278,7 +278,7 @@ public class Proxy : IDisposable
         }
         
         var proxy = new Proxy(link, options, loggerFactory);
-        await proxy.Handshake();
+        await proxy.Handshake(auth);
         return proxy;
     }
 
@@ -311,28 +311,34 @@ public class Proxy : IDisposable
             throw new SynsharpException("socket closed by server before handshake");
         }
 
-        _logger?.LogTrace("Proxy is now authenticated");
+        if (res[1]["retn"][0])
+        {
+            _logger?.LogTrace("Proxy is now authenticated");
 
-        _sess = res[1]["sess"];
-        _sharinfo = res[1]["sharinfo"];
-        Methinfo = _sharinfo["meths"];
+            _sess = res[1]["sess"];
+            _sharinfo = res[1]["sharinfo"];
+            Methinfo = _sharinfo["meths"];
 
-        if (_logger != null)
-            _logger.LogTrace(string.Join("\n",
-                ((Dictionary<object, object>)Methinfo).Select(test =>
-                    test.Key + " =>  " + ((bool)((Dictionary<object, object>)test.Value)["genr"] ? "gen" : "-"))));
+            _logger?.LogTrace(string.Join("\n",
+                    ((Dictionary<object, object>)Methinfo).Select(test =>
+                        test.Key + " =>  " + ((bool)((Dictionary<object, object>)test.Value)["genr"] ? "gen" : "-"))));
 
-        var data = res[1];
-        if (!obj.Data.Vers.SequenceEqual(((object[])data["vers"]).Select(System.Convert.ToInt32)))
-            throw new BadVersionException();
+            var data = res[1];
+            if (!obj.Data.Vers.SequenceEqual(((object[])data["vers"]).Select(System.Convert.ToInt32)))
+                throw new BadVersionException();
 
-        _logger?.LogTrace("Proxy starts receive loop");
+            _logger?.LogTrace("Proxy starts receive loop");
 #pragma warning disable CS4014
-        // This loop runs in the background and should not be awaited.
-        System.Threading.Tasks.Task.Run(RxLoop);
+            // This loop runs in the background and should not be awaited.
+            System.Threading.Tasks.Task.Run(RxLoop);
 #pragma warning restore CS4014
-
-        return Common.Result(data["retn"]);
+            return Common.Result(data["retn"]);
+        }
+        else
+        {
+            _logger?.LogTrace("Proxy could not authenticate");
+            throw new SynsharpException("Unable to authenticate");
+        }
     }
 
     private async Task RxLoop()
