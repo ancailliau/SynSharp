@@ -1,3 +1,4 @@
+
 namespace Synsharp.Telepath.Messages;
 
 public static class SynConvert
@@ -128,8 +129,10 @@ public static class SynConvert
         };
 
         if (meta.ContainsKey("repr"))
-            node.Repr = (string?)meta["repr"];
-        
+        {
+            node.Repr = meta["repr"];
+        }
+
         if (meta.ContainsKey("iden"))
             node.Iden = (string)meta["iden"];
         

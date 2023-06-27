@@ -12,7 +12,7 @@ public class SynapseNode : SynapseMessage
     // TODO path property
     // TODO tagprops
     
-    public string? Repr { get; set; }
+    public object Repr { get; set; }
     public Dictionary<string, object>? Reprs { get; set; }
     
     // TODO tagpropreprs
