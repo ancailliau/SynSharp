@@ -199,9 +199,13 @@ public class StormCommand : AsyncCommand<StormCommand.Settings>
         }
         else if (o is SynapseNode node)
         {
-            if (!string.IsNullOrEmpty(node.Repr))
+            if (node.Repr != null)
             {
-                AnsiConsole.Write(new Markup($"[dodgerblue1 bold]{node.Form}={node.Repr}[/] ({node.Iden})\n"));
+              if (node.Repr is object[] arr) {
+                AnsiConsole.Write(new Markup($"[dodgerblue1 bold]{node.Form}=({string.Join(", ", arr.Select(item => item.ToString()))})[/] ({node.Iden})\n"));
+              } else if (node.Repr is object o2) {
+                AnsiConsole.Write(new Markup($"[dodgerblue1 bold]{node.Form}={node.Repr}[/] ({o2.ToString()})\n"));
+              }
             }
             else
             {
