@@ -75,7 +75,7 @@ public class ViewHelper
                 { "iden", iden }
             }
         };
-        return await proxy.CallStormAsync<SynapseView>("return($lib.view.get($iden))", opts);
+        return await proxy.CallStormAsync<SynapseView>("try { return($lib.view.get($iden)) } catch * as err { return($lib.null) }", opts);
     }
     
     /// <summary>
@@ -105,7 +105,7 @@ public class ViewHelper
                 { "iden", iden }
             }
         };
-        _ = await proxy.CallStormAsync($"$lib.view.del($iden)", opts);
+        _ = await proxy.CallStormAsync("try { $lib.view.del($iden) } catch * as err { }", opts);
     }
 
     public async Task Merge(string iden)
