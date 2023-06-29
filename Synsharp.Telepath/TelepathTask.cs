@@ -38,7 +38,8 @@ public static class Common
         {
             var error = (object[]) reply[1];
             var details = (Dictionary<object, object>)error[1];
-            throw new Exception($"{error[0]}: {details["mesg"]}");
+            if (details.ContainsKey("mesg")) throw new Exception($"{error[0]}: {details["mesg"]}");
+            else  throw new Exception($"{error[0]}");
         }
     }
 }

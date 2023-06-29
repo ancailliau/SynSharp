@@ -84,10 +84,17 @@ public static class SynConvert
     
     public static SynapsePrint ToPrint(dynamic o)
     {
-        return new SynapsePrint()
+        if (o.ContainsKey("mesg"))
         {
-            Message = o["mesg"]
-        };
+            return new SynapsePrint()
+            {
+                Message = o["mesg"]
+            };   
+        }
+        else
+        {
+            return new SynapsePrint() { Message = "SynSharp Error: Could not get message" };
+        }
     }
     
     public static SynapseNode ToNode(dynamic o)
