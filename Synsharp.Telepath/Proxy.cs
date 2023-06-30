@@ -101,6 +101,8 @@ public class Proxy : IDisposable
 
     private async Task<Link> GetPoolLink()
     {
+        // Try to get a link from the queue, if none exists, create a new one. The new link should be added to the
+        // pool when finish using.
         while (_links.TryDequeue(out var link))
         {
             if (link.IsFini) continue;

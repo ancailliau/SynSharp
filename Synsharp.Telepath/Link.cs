@@ -56,9 +56,18 @@ internal class Link : IDisposable
 
     private async Task ConnectAsync()
     {
-        _logger?.LogTrace("Start to connect the link");
-        _tcpClient = new TcpClient(_host, _port);
-        _logger?.LogTrace("Tcp client Connected");
+        try
+        {
+            _logger?.LogTrace("Start to connect the link");
+            _tcpClient = new TcpClient(_host, _port);
+            _logger?.LogTrace("Tcp client Connected");
+        }
+        catch (SocketException socketException)
+        {
+            _logger?.LogWarning("Tcp client failed to connect: {ExceptionMessage}", socketException.Message);
+            Finish();
+            return;
+        }
 
         if (LinkInfo?.clientCertificates == null)
         {
