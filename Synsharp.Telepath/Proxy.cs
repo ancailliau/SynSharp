@@ -115,7 +115,7 @@ public class Proxy : IDisposable
     private async Task<Link> InitPoolLink()
     {
         var link = await Link.Connect(_link.Host, _link.Port, _link.LinkInfo, _loggerFactory?.CreateLogger<Link>());
-        link.OnFini += OnLinkFini;
+        if (link.IsFini) OnLinkFini(null, null);
         return link;
     }
 
@@ -397,6 +397,11 @@ public class Proxy : IDisposable
         };
 
         var link = await GetPoolLink();
+        if (link == null || link.IsFini)
+        {
+            Fini();
+            throw new SynsharpException("Could not get link from pool link");
+        }
         await link.Tx(mesg);
 
         var resp = await link.Rx();
