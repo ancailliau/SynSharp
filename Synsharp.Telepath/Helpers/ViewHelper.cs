@@ -110,7 +110,7 @@ public class ViewHelper
 
     public async Task Merge(string iden)
     {
-        var command = "$view = $lib.view.get($iden) $view.merge()";
+        var command = "try { $view = $lib.view.get($iden) $view.merge() } catch * as err { return($lib.null) }";
         var proxy = await _telepathClient.GetProxyAsync();
         var opts = new StormOps()
         {
