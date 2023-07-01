@@ -12,6 +12,9 @@ using Synsharp.Telepath.Messages;
 
 public class StormCommand : AsyncCommand<StormCommand.Settings>
 {
+    private bool _cancelConfirmed;
+    private TelepathClient _client;
+
     public sealed class Settings : CommandSettings
     {
         [Description("The url to the cell, e.g. tcp://visi:secret@localhost:27492/")]
@@ -27,28 +30,49 @@ public class StormCommand : AsyncCommand<StormCommand.Settings>
                 .AddFilter("Microsoft", LogLevel.Warning)
                 .AddFilter("System", LogLevel.Warning)
                 .AddFilter("Synsharp", LogLevel.Trace)
-                .AddConsole();
+                /*.AddConsole()*/;
         });
-        
+
+        _cancelConfirmed = false;
+        Console.CancelKeyPress += new ConsoleCancelEventHandler(cancelHandler);
+
         AnsiConsole.Markup("[underline red]Welcome to Synsharp Console[/]\n");
 
-        using var client = new TelepathClient(settings.Url, loggerFactory: loggerFactory);
-        client.OnLinked += async (sender, eventArgs) =>
+        _client = new TelepathClient(settings.Url, loggerFactory: loggerFactory);
+        _client.OnLinked += async (sender, eventArgs) =>
         {
             AnsiConsole.MarkupLine("[bold green]Client is connected.[/]");
         };
         
-        await REPL(client, loggerFactory);
+        await REPL(_client, loggerFactory);
+        
+        AnsiConsole.MarkupLine("[green]Closing client...[/]");
+        _client.Dispose();
+        
         return 0;
     }
-    
+
+    private void cancelHandler(object? sender, ConsoleCancelEventArgs e)
+    {
+        if (_cancelConfirmed)
+        {
+            _client?.Dispose();
+        }
+        else
+        {
+            AnsiConsole.Markup("\n[grey]Hit <Ctrl-C>, use !quit to quit or hit <Ctrl-C> again[/]\n");
+            _cancelConfirmed = true;
+            e.Cancel = true;
+        }
+    }
+
     private static async Task REPL(TelepathClient client, ILoggerFactory loggerFactory)
     {
         Synsharp.Telepath.Helpers.SynapseView currentView = null;
         string query;
         while (true)
         {
-            var proxy = await client.GetProxyAsync(TimeSpan.FromSeconds(10));
+            var proxy = await client.GetProxyAsync();
             
             var prompt = "storm> ";
             if (currentView != null)
@@ -122,49 +146,8 @@ public class StormCommand : AsyncCommand<StormCommand.Settings>
 
                 } else if (query == "!test")
                 {
-                    var node = new SynapseNode()
-                    {
-                        Form = "inet:ipv4",
-                        Valu = "8.8.8.8",
-                        Props = new Dictionary<string, dynamic>()
-                        {
-                            { "asn", 15169 }
-                        },
-                        Tags = new Dictionary<string, long?[]>()
-                        {
-                            { "google", new long?[] { } }
-                        }
-                    };
+                    AnsiConsole.MarkupLine($"[grey]Reserved command, do nothing.[/]");
 
-
-                    var variables = new Dictionary<string, dynamic>();
-                    var stormQuery = new StringBuilder();
-
-                    stormQuery.Append("[");
-
-                    stormQuery.Append($" {node.Form}=$valu ");
-
-                    foreach (var prop in node.Props)
-                    {
-                        stormQuery.Append($" :{prop.Key}=${prop.Key} ");
-                        variables.Add(prop.Key, prop.Value);
-                    }
-
-                    foreach (var prop in node.Tags)
-                    {
-                        stormQuery.Append($" +#{prop.Key} ");
-                    }
-
-                    stormQuery.Append("]");
-
-                    variables.Add("valu", node.Valu);
-
-                    var watch = Stopwatch.StartNew();
-                    var opts = new StormOps() { Repr = true, Vars = variables, View = currentView?.Iden };
-                    await foreach (var o in proxy.Storm(stormQuery.ToString(), opts))
-                    {
-                        Display(o, watch);
-                    }
                 } else if (query.StartsWith("!count"))
                 {
                     var strings = query.Split(' ', 2);
@@ -202,14 +185,23 @@ public class StormCommand : AsyncCommand<StormCommand.Settings>
             if (node.Repr != null)
             {
               if (node.Repr is object[] arr) {
-                AnsiConsole.Write(new Markup($"[dodgerblue1 bold]{node.Form}=({string.Join(", ", arr.Select(item => item.ToString()))})[/] ({node.Iden})\n"));
+                AnsiConsole.Write(
+                    new Markup($"[dodgerblue1 bold]{Markup.Escape(node.Form)}=({string.Join(", ", arr.Select(item => Markup.Escape(item.ToString())))})[/] ({node.Iden})\n"));
               } else if (node.Repr is object o2) {
-                AnsiConsole.Write(new Markup($"[dodgerblue1 bold]{node.Form}={node.Repr}[/] ({o2.ToString()})\n"));
+                AnsiConsole.Write(new Markup($"[dodgerblue1 bold]{Markup.Escape(node.Form)}={Markup.Escape((string)node.Repr)}[/] ({Markup.Escape(o2.ToString())})\n"));
+                
               }
             }
             else
             {
-                AnsiConsole.Write(new Markup($"[dodgerblue1 bold]{node.Form}={node.Valu}[/] ({node.Iden})\n"));
+                if (node.Valu is object[] arr)
+                {
+                    var str = string.Join(", ", arr.Select(_ => Markup.Escape(_.ToString())));
+                    AnsiConsole.Write(new Markup($"[dodgerblue1 bold]{Markup.Escape(node.Form)}=({str})[/] ({node.Iden})\n"));
+                } else if (node.Valu is object o2)
+                {
+                    AnsiConsole.Write(new Markup($"[dodgerblue1 bold]{Markup.Escape(node.Form)}={Markup.Escape(node.Valu)}[/] ({node.Iden})\n"));
+                }
             }
 
             foreach (var prop in node.Props)
@@ -233,7 +225,7 @@ public class StormCommand : AsyncCommand<StormCommand.Settings>
                     var text = "";
                     if (prop.Value.GetType() == typeof(Object[]))
                     {
-                        text = $"({string.Join(",", ((Object[])prop.Value).Select(_ => _.ToString()))})";
+                        text = $"({string.Join(",", ((Object[])prop.Value).Select(_ => Markup.Escape(_.ToString())))})";
                     }
                     else
                     {
@@ -264,7 +256,7 @@ public class StormCommand : AsyncCommand<StormCommand.Settings>
         else if (o is SynapseWarn warn)
         {
             AnsiConsole.Write(
-                new Markup($"[orange b]SynapseWarn[/] [orange]{Markup.Escape(warn.Message)}[/]\n"));
+                new Markup($"[red b]SynapseWarn[/] [red]{Markup.Escape(warn.Message)}[/]\n"));
         }
         else
         {

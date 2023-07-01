@@ -46,8 +46,8 @@ public class TelepathClient : IDisposable
             try
             {
                 await InitTeleLink(url);
-                Ready.Set();
                 _logger?.LogTrace($"Successfully connected to {UrlHelper.SanitizeUrl(url)}");
+                Ready.Set();
                 return;
             }
             // TODO: Redirect - self._setNextUrl(e.errinfo.get('url'))
@@ -92,10 +92,14 @@ public class TelepathClient : IDisposable
 
     private async Task InitTeleLink(string url)
     {
+        _logger?.LogTrace("Calling InitTeleLink {URL}", url);
         _proxy = await Proxy.OpenUrlAsync(url, _opts, _loggerFactory);
+        // TODO What if proxy is null
+        
+        _logger?.LogTrace("Got a new proxy: {ProxyId}", _proxy.GetHashCode().ToString("X4"));
         _methInfo = _proxy.Methinfo;
         _proxy.LinkPoolSize = _configuration.LinkPoolSize;
-        _proxy.OnFini += OnProxyFini; 
+        _proxy.OnProxyFini += OnProxyFini;
         
         try
         {
@@ -103,14 +107,19 @@ public class TelepathClient : IDisposable
         }
         catch (Exception e)
         {
-            _logger?.LogError(e, $"onlink: {e.Message}");
+            _logger?.LogError(e, "Onlink handler failed on client: {ErrorMessage}", e.Message);
         }
     }
 
     private void OnProxyFini(object? sender, EventArgs eventArgs)
     {
-        _logger?.LogTrace("Proxy is finished");
-        FireLinkLoop();
+        if (!IsFini)
+        {
+            _logger?.LogTrace("Proxy {ProxyId} is finished, requesting a new one", _proxy.GetHashCode().ToString("X4"));
+            FireLinkLoop();
+        }
+        else 
+            _logger?.LogTrace("Proxy {ProxyId} is finished but so is the client, do nothing.", _proxy.GetHashCode().ToString("X4"));
     }
 
     private void FireLinkLoop()
@@ -123,10 +132,11 @@ public class TelepathClient : IDisposable
 
     public bool IsFini { get; set; } = false;
 
-    private AsyncAutoResetEvent Ready { get; init; }
+    private AsyncAutoResetEvent Ready { get; }
    
     public void Dispose()
     {
+        _logger?.LogTrace("Disposing TelepathClient");
         _proxy?.Dispose();
         
         // Avoid tasks without timeouts specified to wait forever
@@ -155,17 +165,33 @@ public class TelepathClient : IDisposable
 
     private async Task WaitReady(TimeSpan? timeout = null)
     {
-        if (timeout != null)
-            await System.Threading.Tasks.Task.WhenAny(Ready.WaitAsync(), System.Threading.Tasks.Task.Delay((TimeSpan)timeout));
+        if (timeout == null)
+        {
+            _logger?.LogTrace("Will wait indefinitely");
+            var task = Ready.WaitAsync();
+            _logger?.LogTrace("Waiting for task {TaskId} to be completed", task.GetHashCode().ToString("X4"));
+            task.Wait();
+            _logger?.LogTrace("Task {TaskId} completed: {TaskCompleted}", task.GetHashCode().ToString("X4"), task.IsCompleted);
+        }
         else
-            await Ready.WaitAsync();
+        {
+            _logger?.LogTrace("Will wait for maximum {Timeout}", timeout);
+            await System.Threading.Tasks.Task.WhenAny(Ready.WaitAsync(),
+                System.Threading.Tasks.Task.Delay((TimeSpan)timeout));
+        }
     }
 
     public async Task<Proxy> GetProxyAsync(TimeSpan? timeout = null)
     {
         await WaitReady(timeout);
-        if (_proxy != null && !_proxy.IsFini) return _proxy;
-        throw new SynsharpException($"Could not get proxy {timeout}");
+        
+        if (_proxy != null)
+        {
+            if (!_proxy.IsFini) return _proxy;
+            throw new SynsharpException($"Client got finished proxy {_proxy.GetHashCode().ToString("X4")}");
+        }
+
+        throw new SynsharpException($"Client could not get a proxy");
     }
     
     protected virtual void OnLink(EventArgs e)

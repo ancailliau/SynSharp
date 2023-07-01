@@ -12,6 +12,66 @@ namespace Synsharp.Tests.Telepath;
 public class TestNodesTelepath : TestTelepath
 {
     [Test]
+    public async Task TestCrashWhenMergeNonExistingView()
+    {
+        Assert.NotNull(SynapseClient);
+
+        var proxy = await SynapseClient.GetProxyAsync();
+
+        try
+        {
+            _ = await proxy.CallStormAsync("$view = $lib.view.get(123) $view.merge()", new StormOps() { Repr = true });
+        }
+        catch (Exception ex)
+        {
+            
+        }
+
+        var response = await proxy.Storm("[ inet:ipv6=2001:0db8:85a3:0000:0000:8a2e:0370:7334 ]", new StormOps() {Repr = true})
+            .OfType<SynapseNode>()
+            .ToListAsync();
+
+        var first = response.Single();
+        Assert.IsNotNull(first);
+        Assert.That(response.First().Valu.Equals("2001:db8:85a3::8a2e:370:7334"));
+    }
+    
+    [Test]
+    public async Task TestCrashWhenAddingNodeOnNonExistingView()
+    {
+        Assert.NotNull(SynapseClient);
+
+        var proxy = await SynapseClient.GetProxyAsync();
+
+        
+        var response = await proxy.Storm("[ inet:ipv6=2001:0db8:85a3:0000:0000:8a2e:0370:7334 ]", new StormOps() {Repr = true, View = "123"})
+            .OfType<SynapseNode>()
+            .ToListAsync();
+
+        var first = response.Single();
+        Assert.IsNotNull(first);
+        Assert.That(response.First().Valu.Equals("2001:db8:85a3::8a2e:370:7334"));
+    }
+    
+    [Test]
+    public async Task TestMultipleAdds()
+    {
+        Assert.NotNull(SynapseClient);
+
+        var proxy = await SynapseClient.GetProxyAsync();
+        
+        var response = await proxy.Storm("[ inet:ipv6=2001:0db8:85a3:0000:0000:8a2e:0370:7334 ]", new StormOps() {Repr = true})
+            .OfType<SynapseNode>()
+            .ToListAsync();
+        
+        Assert.AreEqual(1, response.Count());
+
+        var first = response.Single();
+        Assert.IsNotNull(first);
+        Assert.That(response.First().Valu.Equals("2001:db8:85a3::8a2e:370:7334"));
+    }
+    
+    [Test]
     public async Task TestAddIPv6()
     {
         Assert.NotNull(SynapseClient);

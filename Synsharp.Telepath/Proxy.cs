@@ -49,7 +49,7 @@ public class Proxy : IDisposable
 
     public void Dispose()
     {
-        _logger?.LogTrace("Disposing proxy");
+        _logger?.LogTrace("Disposing proxy {ProxyId}", this.GetHashCode().ToString("X4"));
         _link?.Dispose();
         foreach (var link in _links) link.Dispose();
     }
@@ -81,12 +81,12 @@ public class Proxy : IDisposable
         try
         {
             await _link!.Tx(mesg);
-            _logger?.LogTrace("waiting for result");
+            _logger?.LogTrace("waiting for result on proxy {ProxyId}", this.GetHashCode().ToString("X4"));
             retn = await task.result();
         }
         catch (Exception e)
         {
-            _logger?.LogError(e, "Error: " + e.Message);
+            _logger?.LogError(e, "Error {ErrorMessage} on proxy {ProxyId}", e.Message, this.GetHashCode().ToString("X4"));
             throw;
         }
         finally
@@ -97,7 +97,7 @@ public class Proxy : IDisposable
         return retn;
     }
 
-    public event EventHandler? OnFini;
+    public event EventHandler? OnProxyFini;
 
     private async Task<Link> GetPoolLink()
     {
@@ -121,17 +121,30 @@ public class Proxy : IDisposable
 
     private void OnLinkFini(object? sender, EventArgs e)
     {
-        _logger?.LogTrace("OnLink Fini");
-        Fini();
+        _logger?.LogTrace("A link of proxy {ProxyId} was finished, finishing the proxy", this.GetHashCode().ToString("X4"));
+        FinishProxy();
     }
 
-    private void Fini()
+    private void FinishProxy()
     {
         if (IsFini)
+        {
+            _logger?.LogTrace("Proxy {ProxyId} is already finished", this.GetHashCode().ToString("X4"));
             return;
+        }
 
+        _logger?.LogTrace("Finishing proxy {ProxyId}", this.GetHashCode().ToString("X4"));
+        
         IsFini = true;
-        OnFini?.Invoke(this, EventArgs.Empty);
+        if (OnProxyFini != null)
+        {
+            _logger?.LogTrace("Invoke OnFini handlers on proxy {ProxyId}", this.GetHashCode().ToString("X4"));
+            OnProxyFini?.Invoke(this, EventArgs.Empty);   
+        }
+        else
+        {
+            _logger?.LogTrace("No OnFini handlers on proxy {ProxyId}", this.GetHashCode().ToString("X4"));
+        }
 
         _logger?.LogTrace("Terminating all tasks");
         var mesg = new object[]
@@ -143,10 +156,10 @@ public class Proxy : IDisposable
         };
         foreach (var task in _tasks.Values) task.Reply(mesg);
 
-        _logger?.LogTrace("Closing all links");
+        _logger?.LogTrace("Closing all links on proxy {ProxyId}", this.GetHashCode().ToString("X4"));
         foreach (var link in _links) link.Finish();
 
-        _logger?.LogTrace("Closing link");
+        _logger?.LogTrace("Closing base link on proxy {ProxyId}", this.GetHashCode().ToString("X4"));
         _link?.Finish();
     }
 
@@ -165,7 +178,7 @@ public class Proxy : IDisposable
         }
         else
         {
-            _logger?.LogWarning($"task:fini for invalid task: {iden}");
+            _logger?.LogWarning("task:fini for invalid task: {TaskIden} on proxy {ProxyId}", iden, this.GetHashCode().ToString("X4"));
         }
     }
 
@@ -178,6 +191,8 @@ public class Proxy : IDisposable
     public static async Task<Proxy> OpenUrlAsync(Uri url, ProxyOptions? options = null,
         ILoggerFactory? loggerFactory = null)
     {
+        var logger = loggerFactory?.CreateLogger<Proxy>();
+        logger?.LogTrace("Called OpenUrlAsync for a new proxy");
         var scheme = url.Scheme;
 
         if (scheme == "aha")
@@ -240,7 +255,7 @@ public class Proxy : IDisposable
 
                 while (!File.Exists(Path.Combine(certDir, "cas", $"{host}.crt")))
                 {
-                    // _logger?.LogTrace($"Testing for {Path.Combine(certDir, "cas", $"{host}.crt")} failed");
+                    logger?.LogTrace("Testing for {CRTFile} failed", Path.Combine(certDir, "cas", $"{host}.crt"));
                     if (host.Contains("."))
                     {
                         var split = host.Split('.', 2);
@@ -248,10 +263,10 @@ public class Proxy : IDisposable
                     }
                     else
                     {
-                        throw new SynsharpException("Could not find CA certifcate.");
+                        throw new SynsharpException("Could not find CA certifcate");
                     }
                 }
-                // _logger?.LogTrace($"Testing for {Path.Combine(certDir, "cas", $"{host}.crt")} succeed");
+                logger?.LogTrace("Testing for {CRTFile} succeed", Path.Combine(certDir, "cas", $"{host}.crt"));
                 
                 var hostname = options.HostName ?? host;
                 
@@ -261,26 +276,33 @@ public class Proxy : IDisposable
                     certName = $"{username}@{hostname}";
                 }
 
+                logger?.LogTrace("Creating linkInfo");
                 linkInfo = new LinkInfo();
                 if (string.IsNullOrEmpty(certHash))
                 {
+                    logger?.LogTrace("Setup X509Certificate from files");
                     var certificate = X509Certificate2.CreateFromPemFile(
                             Path.Combine(certDir, "users", $"{certName}.crt"), 
                             Path.Combine(certDir, "users", $"{certName}.key"));
                     linkInfo.clientCertificates = new X509CertificateCollection(new X509Certificate[] { certificate });
-                    
+                    logger?.LogTrace("Setup complete for new proxy with SSL certificates");
                 }
                 else
                 {
                     throw new NotSupportedException();
                 }
+                
+                logger?.LogTrace("SSL Init is complete");
             }
 
+            logger?.LogTrace("Request a new base link");
             link = await Link.Connect(host, port, linkInfo, loggerFactory?.CreateLogger<Link>());
         }
         
         var proxy = new Proxy(link, options, loggerFactory);
+        logger.LogTrace("Handshake for proxy {ProxyId}", proxy.GetHashCode().ToString("X4"));
         await proxy.Handshake(auth);
+        logger.LogTrace("Handshake for proxy {ProxyId} complete", proxy.GetHashCode().ToString("X4"));
         return proxy;
     }
 
@@ -288,7 +310,7 @@ public class Proxy : IDisposable
     {
         if (_link == null) throw new SynsharpException("Link is not connected");
 
-        _logger?.LogTrace("Proxy starts authentication");
+        _logger?.LogTrace("Proxy starts authentication on proxy {ProxyId}", this.GetHashCode().ToString("X4"));
 
         var obj = new TelepathMessage<TeleSynRequest>
         {
@@ -302,20 +324,20 @@ public class Proxy : IDisposable
         };
         _logger?.LogTrace("TeleSynRequest: " + JsonConvert.SerializeObject(obj));
 
-        _logger?.LogTrace("Send authentication request");
+        _logger?.LogTrace("Send authentication request on proxy {ProxyId}", this.GetHashCode().ToString("X4"));
         await _link.Tx(obj);
 
-        _logger?.LogTrace("Wait for reply from server");
+        _logger?.LogTrace("Wait for reply from server on proxy {ProxyId}", this.GetHashCode().ToString("X4"));
         var res = await _link.Rx();
         if (res == null)
         {
-            _logger?.LogError("socket closed by server before handshake");
+            _logger?.LogError("socket closed by server before handshake on proxy {ProxyId}", this.GetHashCode().ToString("X4"));
             throw new SynsharpException("socket closed by server before handshake");
         }
 
         if (res[1]["retn"][0])
         {
-            _logger?.LogTrace("Proxy is now authenticated");
+            _logger?.LogTrace("Proxy {ProxyId} is now authenticated", this.GetHashCode().ToString("X4"));
 
             _sess = res[1]["sess"];
             _sharinfo = res[1]["sharinfo"];
@@ -329,7 +351,7 @@ public class Proxy : IDisposable
             if (!obj.Data.Vers.SequenceEqual(((object[])data["vers"]).Select(System.Convert.ToInt32)))
                 throw new BadVersionException();
 
-            _logger?.LogTrace("Proxy starts receive loop");
+            _logger?.LogTrace("Proxy {ProxyId} starts receive loop", this.GetHashCode().ToString("X4"));
 #pragma warning disable CS4014
             // This loop runs in the background and should not be awaited.
             System.Threading.Tasks.Task.Run(RxLoop);
@@ -338,7 +360,7 @@ public class Proxy : IDisposable
         }
         else
         {
-            _logger?.LogTrace("Proxy could not authenticate");
+            _logger?.LogTrace("Proxy {ProxyId} could not authenticate", this.GetHashCode().ToString("X4"));
             if (res[1]["retn"][1][1].ContainsKey("mesg"))
                 throw new SynsharpException(res[1]["retn"][1][0].ToString() + ": " + res[1]["retn"][1][1]["mesg"].ToString());
             else
@@ -355,7 +377,9 @@ public class Proxy : IDisposable
 
             try
             {
-                _logger?.LogTrace($"Received message '{mesg.Type.ToString()}'");
+                string s = mesg.Type.ToString();
+                _logger?.LogTrace("Received message '{Message}' on proxy {ProxyId}", s, this.GetHashCode().ToString("X4"));
+                
                 if (_handlers.ContainsKey(mesg[0]))
                     _handlers[mesg.Type](mesg[1]);
                 else
@@ -363,12 +387,12 @@ public class Proxy : IDisposable
             }
             catch (Exception e)
             {
-                _logger?.LogError($"RxLoop: {e.Message}");
+                _logger?.LogError("RxLoop: {ErrorMessage} on proxy {ProxyId}", e.Message, this.GetHashCode().ToString("X4"));
                 return;
             }
         }
 
-        _logger?.LogTrace("Terminating RxLoop");
+        _logger?.LogTrace("Terminating RxLoop on proxy {ProxyId}", this.GetHashCode().ToString("X4"));
     }
 
     private dynamic? Call(string name, object[] args, Dictionary<string, object?> kwargs)
@@ -399,8 +423,8 @@ public class Proxy : IDisposable
         var link = await GetPoolLink();
         if (link == null || link.IsFini)
         {
-            Fini();
-            throw new SynsharpException("Could not get link from pool link");
+            FinishProxy();
+            throw new Exception("Could not get link from pool link");
         }
         await link.Tx(mesg);
 
