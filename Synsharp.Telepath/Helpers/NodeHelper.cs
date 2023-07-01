@@ -98,7 +98,7 @@ public class NodeHelper
         }
         else
         {
-            _logger.LogDebug("No nodes for light edge");
+            _logger?.LogDebug("No nodes for light edge");
         }
     }
 

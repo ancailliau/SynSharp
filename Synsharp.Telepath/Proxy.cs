@@ -300,9 +300,9 @@ public class Proxy : IDisposable
         }
         
         var proxy = new Proxy(link, options, loggerFactory);
-        logger.LogTrace("Handshake for proxy {ProxyId}", proxy.GetHashCode().ToString("X4"));
+        logger?.LogTrace("Handshake for proxy {ProxyId}", proxy.GetHashCode().ToString("X4"));
         await proxy.Handshake(auth);
-        logger.LogTrace("Handshake for proxy {ProxyId} complete", proxy.GetHashCode().ToString("X4"));
+        logger?.LogTrace("Handshake for proxy {ProxyId} complete", proxy.GetHashCode().ToString("X4"));
         return proxy;
     }
 

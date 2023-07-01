@@ -136,6 +136,7 @@ public class TelepathClient : IDisposable
    
     public void Dispose()
     {
+        IsFini = true;
         _logger?.LogTrace("Disposing TelepathClient");
         _proxy?.Dispose();
         
