@@ -9,11 +9,14 @@ using Synsharp;
 using Synsharp.Telepath;
 using Synsharp.Telepath.Helpers;
 using Synsharp.Telepath.Messages;
+using SynapseView = Synsharp.Telepath.Helpers.SynapseView;
 
 public class StormCommand : AsyncCommand<StormCommand.Settings>
 {
     private bool _cancelConfirmed;
     private TelepathClient _client;
+    private static CancellationTokenSource _cancellationTokenSource;
+    private static SynapseView? _currentView;
 
     public sealed class Settings : CommandSettings
     {
@@ -33,9 +36,11 @@ public class StormCommand : AsyncCommand<StormCommand.Settings>
                 /*.AddConsole()*/;
         });
 
+        _cancellationTokenSource = new CancellationTokenSource();
+
         _cancelConfirmed = false;
         Console.CancelKeyPress += new ConsoleCancelEventHandler(cancelHandler);
-
+        
         AnsiConsole.Markup("[underline red]Welcome to Synsharp Console[/]\n");
 
         _client = new TelepathClient(settings.Url, loggerFactory: loggerFactory);
@@ -63,108 +68,132 @@ public class StormCommand : AsyncCommand<StormCommand.Settings>
             AnsiConsole.Markup("\n[grey]Hit <Ctrl-C>, use !quit to quit or hit <Ctrl-C> again[/]\n");
             _cancelConfirmed = true;
             e.Cancel = true;
+            _cancellationTokenSource.Cancel();
         }
     }
 
     private static async Task REPL(TelepathClient client, ILoggerFactory loggerFactory)
     {
-        Synsharp.Telepath.Helpers.SynapseView currentView = null;
+        _currentView = null;
         string query;
         while (true)
         {
-            var proxy = await client.GetProxyAsync();
-            
-            var prompt = "storm> ";
-            if (currentView != null)
-                if (string.IsNullOrEmpty(currentView.Name))
-                    prompt = $"storm([magenta2]{currentView.Iden}[/])> ";
-                else
-                    prompt = $"storm([magenta2]{currentView.Name}[/])> ";
-            
-            query = AnsiConsole.Ask<string>(prompt);
-            if (!query.StartsWith("!"))
+            try
             {
-                Stopwatch watch = null;
-                watch = Stopwatch.StartNew();
-
-                var opts = new StormOps() { Repr = true, View = currentView?.Iden };
-                await foreach (var o in proxy.Storm(query, opts))
-                {
-                    Display(o, watch);
-                }
-
-                AnsiConsole.MarkupLine("[b]Done[/]");
+                if (await QueryUser(client, loggerFactory)) break;
             }
-            else
+            catch (TaskCanceledException ex)
             {
-                if (query.StartsWith("!view"))
-                {
-                    var viewHelper = new ViewHelper(client, loggerFactory.CreateLogger<ViewHelper>());
-                    var command = query.Split(' ');
-                    if (command[1] == "list")
-                    {
-                        var views = await viewHelper.List();
-                        foreach (var view in views)
-                        {
-                            AnsiConsole.MarkupLine($"{view.Iden} ({view.Name})"); 
-                        }
-                    } else if (command[1] == "fork")
-                    {
-                        var view = await viewHelper.Fork();
-                        if (view != null)
-                        {
-                            currentView = view;
-                            AnsiConsole.MarkupLine($"Now on {view.Iden} ({view.Name})");
-                        }
-                    } else if (command[1] == "checkout")
-                    {
-                        if (command.Length > 2)
-                        {
-                            var view = await viewHelper.GetAsync(command[2]);   
-                            if (view != null)
-                            {
-                                currentView = view;
-                                AnsiConsole.MarkupLine($"Now on {view.Iden} ({view.Name})");
-                            }
-                        }
-                    } else if (command[1] == "delete")
-                    {
-                        if (command.Length > 2)
-                        {
-                            await viewHelper.Delete(command[2]);
-                            AnsiConsole.MarkupLine($"Deleted view");   
-                        }
-                    } else if (command[1] == "merge")
-                    {
-                        if (currentView != null)
-                        {
-                            await viewHelper.Merge(currentView.Iden);
-                            AnsiConsole.MarkupLine($"Merged current view");
-                            currentView = null;
-                        }
-                    }
-
-                } else if (query == "!test")
-                {
-                    AnsiConsole.MarkupLine($"[grey]Reserved command, do nothing.[/]");
-
-                } else if (query.StartsWith("!count"))
-                {
-                    var strings = query.Split(' ', 2);
-                    if (strings.Length > 1)
-                    {
-                        var subquery = strings[1]; 
-                        var opts = new StormOps() { Repr = true, View = currentView?.Iden };
-                        var count = await proxy.Count(subquery, opts);
-                        AnsiConsole.MarkupLine($"[green]{count} nodes[/]");
-                    }
-
-                } else if (query == "!quit")
-                {
-                    break;
-                }
+                _cancellationTokenSource = new CancellationTokenSource();
             }
         }
+    }
+
+    private static async Task<bool> QueryUser(TelepathClient client, ILoggerFactory loggerFactory)
+    {
+        string query;
+        var proxy = await client.GetProxyAsync();
+
+        var prompt = "storm> ";
+        if (_currentView != null)
+            if (string.IsNullOrEmpty(_currentView.Name))
+                prompt = $"storm([magenta2]{_currentView.Iden}[/])> ";
+            else
+                prompt = $"storm([magenta2]{_currentView.Name}[/])> ";
+
+        var textPrompt = new TextPrompt<string>(prompt);
+
+        query = await textPrompt.ShowAsync(AnsiConsole.Console, _cancellationTokenSource.Token);
+
+        //query = AnsiConsole.Ask<string>(prompt);
+        if (!query.StartsWith("!"))
+        {
+            Stopwatch watch = null;
+            watch = Stopwatch.StartNew();
+
+            var opts = new StormOps() { Repr = true, View = _currentView?.Iden };
+            await foreach (var o in proxy.Storm(query, opts))
+            {
+                Display(o, watch);
+            }
+
+            AnsiConsole.MarkupLine("[b]Done[/]");
+        }
+        else
+        {
+            if (query.StartsWith("!view"))
+            {
+                var viewHelper = new ViewHelper(client, loggerFactory.CreateLogger<ViewHelper>());
+                var command = query.Split(' ');
+                if (command[1] == "list")
+                {
+                    var views = await viewHelper.List();
+                    foreach (var view in views)
+                    {
+                        AnsiConsole.MarkupLine($"{view.Iden} ({view.Name})");
+                    }
+                }
+                else if (command[1] == "fork")
+                {
+                    var view = await viewHelper.Fork();
+                    if (view != null)
+                    {
+                        _currentView = view;
+                        AnsiConsole.MarkupLine($"Now on {view.Iden} ({view.Name})");
+                    }
+                }
+                else if (command[1] == "checkout")
+                {
+                    if (command.Length > 2)
+                    {
+                        var view = await viewHelper.GetAsync(command[2]);
+                        if (view != null)
+                        {
+                            _currentView = view;
+                            AnsiConsole.MarkupLine($"Now on {view.Iden} ({view.Name})");
+                        }
+                    }
+                }
+                else if (command[1] == "delete")
+                {
+                    if (command.Length > 2)
+                    {
+                        await viewHelper.Delete(command[2]);
+                        AnsiConsole.MarkupLine($"Deleted view");
+                    }
+                }
+                else if (command[1] == "merge")
+                {
+                    if (_currentView != null)
+                    {
+                        await viewHelper.Merge(_currentView.Iden);
+                        AnsiConsole.MarkupLine($"Merged current view");
+                        _currentView = null;
+                    }
+                }
+            }
+            else if (query == "!test")
+            {
+                AnsiConsole.MarkupLine($"[grey]Reserved command, do nothing.[/]");
+            }
+            else if (query.StartsWith("!count"))
+            {
+                var strings = query.Split(' ', 2);
+                if (strings.Length > 1)
+                {
+                    var subquery = strings[1];
+                    var opts = new StormOps() { Repr = true, View = _currentView?.Iden };
+                    var count = await proxy.Count(subquery, opts);
+                    AnsiConsole.MarkupLine($"[green]{count} nodes[/]");
+                }
+            }
+            else if (query == "!quit")
+            {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     private static void Display(SynapseMessage o, Stopwatch? watch)
