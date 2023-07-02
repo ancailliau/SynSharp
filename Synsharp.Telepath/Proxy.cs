@@ -342,6 +342,8 @@ public class Proxy : IDisposable
             _sess = res[1]["sess"];
             _sharinfo = res[1]["sharinfo"];
             Methinfo = _sharinfo["meths"];
+            
+            _logger?.LogTrace("Proxy {ProxyId} received session {SessionId}", this.GetHashCode().ToString("X4"), _sess);
 
             _logger?.LogTrace(string.Join("\n",
                     ((Dictionary<object, object>)Methinfo).Select(test =>
@@ -469,9 +471,16 @@ public class Proxy : IDisposable
         if (resp[0] == "t2:fini")
         {
             await PutPoolLink(link);
-            var data = resp.Data;
-            var retn = (object[])data["retn"];
-            yield return Common.Result(retn);
+            if (resp[1]["retn"][0] is bool b && b)
+            {
+                var data = resp.Data;
+                var retn = (object[])data["retn"];
+                yield return Common.Result(retn);
+            }
+            else
+            {
+                throw new SynsharpError("t2:fini returned false");
+            }
         }
         else if (resp[0] == "t2:genr")
         {

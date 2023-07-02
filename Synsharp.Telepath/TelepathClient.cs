@@ -15,7 +15,8 @@ public class TelepathClient : IDisposable
     private ProxyOptions? _opts;
     private dynamic _methInfo;
 
-    public event EventHandler OnLinked;
+    public event EventHandler OnConnect;
+    public event EventHandler OnDisconnect;
 
     public TelepathClient(string url, ProxyOptions? opts = null, ClientConfiguration? configuration = null,
         ILoggerFactory? loggerFactory = null) : this(new[] { url }, opts, configuration, loggerFactory)
@@ -120,6 +121,15 @@ public class TelepathClient : IDisposable
         }
         else 
             _logger?.LogTrace("Proxy {ProxyId} is finished but so is the client, do nothing.", _proxy.GetHashCode().ToString("X4"));
+        
+        try
+        {
+            OnDisconnect?.Invoke(this, null);
+        }
+        catch (Exception e)
+        {
+            _logger?.LogError(e, "Onlink handler failed on client: {ErrorMessage}", e.Message);
+        }
     }
 
     private void FireLinkLoop()
@@ -197,6 +207,6 @@ public class TelepathClient : IDisposable
     
     protected virtual void OnLink(EventArgs e)
     {
-        OnLinked?.Invoke(this, e);
+        OnConnect?.Invoke(this, e);
     }
 }

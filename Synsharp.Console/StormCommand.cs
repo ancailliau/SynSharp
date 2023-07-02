@@ -33,7 +33,7 @@ public class StormCommand : AsyncCommand<StormCommand.Settings>
                 .AddFilter("Microsoft", LogLevel.Warning)
                 .AddFilter("System", LogLevel.Warning)
                 .AddFilter("Synsharp", LogLevel.Trace)
-                /*.AddConsole()*/;
+                .AddConsole();
         });
 
         _cancellationTokenSource = new CancellationTokenSource();
@@ -44,9 +44,14 @@ public class StormCommand : AsyncCommand<StormCommand.Settings>
         AnsiConsole.Markup("[underline red]Welcome to Synsharp Console[/]\n");
 
         _client = new TelepathClient(settings.Url, loggerFactory: loggerFactory);
-        _client.OnLinked += async (sender, eventArgs) =>
+        _client.OnConnect += async (sender, eventArgs) =>
         {
             AnsiConsole.MarkupLine("[bold green]Client is connected.[/]");
+        };
+        
+        _client.OnDisconnect += async (sender, eventArgs) =>
+        {
+            AnsiConsole.MarkupLine("[bold orange1]Client disconnected.[/]");
         };
         
         await REPL(_client, loggerFactory);
@@ -86,13 +91,18 @@ public class StormCommand : AsyncCommand<StormCommand.Settings>
             {
                 _cancellationTokenSource = new CancellationTokenSource();
             }
+            catch (SynsharpError ex)
+            {   
+                AnsiConsole.MarkupLine($"[bold orange1]Something went wrong ({ex.Message}).[/]");
+                AnsiConsole.WriteException(ex, ExceptionFormats.ShortenEverything);
+            }
         }
     }
 
     private static async Task<bool> QueryUser(TelepathClient client, ILoggerFactory loggerFactory)
     {
         string query;
-        var proxy = await client.GetProxyAsync();
+        var proxy = await client.GetProxyAsync(TimeSpan.FromSeconds(10));
 
         var prompt = "storm> ";
         if (_currentView != null)

@@ -14,3 +14,16 @@ public class SynsharpException : Exception
         
     }
 }
+
+public class SynsharpError : Exception
+{
+    public SynsharpError()
+    {
+        
+    }
+
+    public SynsharpError(string message): base(message)
+    {
+        
+    }
+}

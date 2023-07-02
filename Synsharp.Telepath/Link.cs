@@ -145,10 +145,12 @@ public class Link : IDisposable
         if (_isFini)
         {
             _logger?.LogTrace("Tx isFini on link {LinkId}, throwing exception", this.GetHashCode().ToString("X4"));
-            throw new SynsharpException();
+            throw new SynsharpError();
         }
 
         byte[] bytes = MessagePackSerializer.Serialize(telepathMessage);
+        _logger?.LogTrace(BitConverter.ToString(bytes).Replace("-", " "));
+
         _logger?.LogTrace("Sending message ({BytesLength} bytes) on link {LinkId}", bytes.Length, this.GetHashCode().ToString("X4"));
         await _stream.WriteAsync(bytes, _cancellationTokenSource.Token);
         _logger?.LogTrace("Sent {BytesLength} bytes on link {LinkId}", bytes.Length, this.GetHashCode().ToString("X4"));
@@ -160,7 +162,7 @@ public class Link : IDisposable
         if (_isFini)
         {
             _logger?.LogTrace("Rx isFini on link {LinkId}, throwing exception", this.GetHashCode().ToString("X4"));
-            throw new SynsharpException();
+            throw new SynsharpError();
         }
 
         return await _rxqu.Reader.ReadAsync(_cancellationTokenSource.Token);
@@ -218,7 +220,7 @@ public class Link : IDisposable
                 // int bytesRead = await socket.ReceiveAsync(memory, SocketFlags.None, cancellationToken);
                 if (bytesRead == 0)
                 {
-                    _logger?.LogTrace("Read 0 byteson link {LinkId}, done. ", this.GetHashCode().ToString("X4"));
+                    _logger?.LogTrace("Read 0 bytes on link {LinkId}, done. ", this.GetHashCode().ToString("X4"));
                     Finish();
                     break;
                 }

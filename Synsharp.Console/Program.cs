@@ -16,7 +16,20 @@ public static class Program
     public static async Task<int> Main(string[] args)
     {
         var app = new CommandApp<StormCommand>();
-        return app.Run(args);
+        app.Configure(config =>
+        {
+            config.PropagateExceptions();
+        });
+        
+        try
+        {
+            return app.Run(args);
+        }
+        catch (Exception ex)
+        {
+            AnsiConsole.WriteException(ex, ExceptionFormats.ShortenEverything);
+            return -99;
+        }
     }
     
 }
