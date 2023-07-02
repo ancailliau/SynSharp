@@ -194,15 +194,21 @@ public class TelepathClient : IDisposable
 
     public async Task<Proxy> GetProxyAsync(TimeSpan? timeout = null)
     {
-        await WaitReady(timeout);
-        
-        if (_proxy != null)
+        do
         {
-            if (!_proxy.IsFini) return _proxy;
-            throw new SynsharpException($"Client got finished proxy {_proxy.GetHashCode().ToString("X4")}");
-        }
+            await WaitReady(timeout);
 
-        throw new SynsharpException($"Client could not get a proxy");
+            if (_proxy != null)
+            {
+                if (!_proxy.IsFini) return _proxy;
+                _logger?.LogError("Client got finished proxy {ProxyId}", _proxy.GetHashCode().ToString("X4"));
+            }
+
+            _logger?.LogError($"Client could not get a proxy");
+        } while (!IsFini);
+
+        _logger?.LogError($"Client could not get a proxy but client is finished");
+        return null;
     }
     
     protected virtual void OnLink(EventArgs e)
