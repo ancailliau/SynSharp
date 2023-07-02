@@ -33,7 +33,6 @@ public class NodeHelper
 
     public async Task<SynapseNode?> AddAsync(SynapseNode node, StormOps? opts = null)
     {
-        var proxy = await _synapseTelepathClient.GetProxyAsync();
         var variables = new Dictionary<string, dynamic>();
         var stormQuery = new StringBuilder();
 
@@ -60,6 +59,7 @@ public class NodeHelper
         variables.Add("valu", node.Valu);
         
         opts.Vars = variables ;
+        var proxy = await _synapseTelepathClient.GetProxyAsync();
         await foreach (var o in proxy.Storm(stormQuery.ToString(), opts))
         {
             if (o is SynapseNode synapseNode)

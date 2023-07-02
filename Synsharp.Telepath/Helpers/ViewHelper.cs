@@ -43,7 +43,6 @@ public class ViewHelper
     /// <returns>The forked view</returns>
     public async Task<SynapseView?> Fork(string iden = null, string name = null)
     {
-        var proxy = await _telepathClient.GetProxyAsync();
         var opts = new StormOps()
         {
             ReadOnly = false,
@@ -54,6 +53,7 @@ public class ViewHelper
             }
         };
         
+        var proxy = await _telepathClient.GetProxyAsync();
         if (string.IsNullOrEmpty(iden))
             return await proxy.CallStormAsync<SynapseView>("$view=$lib.view.get().fork($name) return($view)", opts);
         else
@@ -67,7 +67,6 @@ public class ViewHelper
     /// <returns>The view</returns>
     public async Task<SynapseView?> GetAsync(string iden = "")
     {
-        var proxy = await _telepathClient.GetProxyAsync();
         var opts = new StormOps()
         {
             Vars = new Dictionary<string, dynamic>()
@@ -75,6 +74,7 @@ public class ViewHelper
                 { "iden", iden }
             }
         };
+        var proxy = await _telepathClient.GetProxyAsync();
         return await proxy.CallStormAsync<SynapseView>("try { return($lib.view.get($iden)) } catch * as err { return($lib.null) }", opts);
     }
     
@@ -97,7 +97,6 @@ public class ViewHelper
         if (string.IsNullOrEmpty(iden))
             throw new ArgumentException("You must provide a valid view identifier.");
         
-        var proxy = await _telepathClient.GetProxyAsync();
         var opts = new StormOps()
         {
             Vars = new Dictionary<string, dynamic>()
@@ -105,13 +104,13 @@ public class ViewHelper
                 { "iden", iden }
             }
         };
+        var proxy = await _telepathClient.GetProxyAsync();
         _ = await proxy.CallStormAsync("try { $lib.view.del($iden) } catch * as err { }", opts);
     }
 
     public async Task Merge(string iden)
     {
         var command = "try { $view = $lib.view.get($iden) $view.merge() } catch * as err { }";
-        var proxy = await _telepathClient.GetProxyAsync();
         var opts = new StormOps()
         {
             Vars = new Dictionary<string, dynamic>()
@@ -119,6 +118,7 @@ public class ViewHelper
                 { "iden", iden }
             }
         };
+        var proxy = await _telepathClient.GetProxyAsync();
         _ = await proxy.CallStormAsync(command, opts);
     }
 }
