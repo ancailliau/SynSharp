@@ -121,7 +121,7 @@ public class NodeHelper
 
     public async Task DeleteAsync(SynapseNode docNode, StormOps? stormOps = null)
     {
-        var command = "*$form=$valu | delnodes ";
+        var command = "*$form=$valu | delnode ";
         var ops = stormOps ?? new StormOps();
         ops.Vars = new Dictionary<string, dynamic>() { { "form", docNode.Form }, { "valu", docNode.Valu } };
 
@@ -131,7 +131,7 @@ public class NodeHelper
 
     public async Task DeleteAsync(string nodeIden, StormOps? stormOps = null)
     {
-        var command = "| delnodes ";
+        var command = "| delnode ";
         var ops = stormOps ?? new StormOps();
         ops.Idens = new [] { nodeIden };
 
