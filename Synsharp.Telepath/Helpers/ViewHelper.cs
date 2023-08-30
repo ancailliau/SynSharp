@@ -90,9 +90,10 @@ public class ViewHelper
     
     /// <summary>
     /// Deletes the view identified by the specified identifier.
+    /// The method removes the top layer if specified.
     /// </summary>
     /// <param name="iden">The identifier</param>
-    public async Task Delete(string iden)
+    public async Task Delete(string iden, bool removeLayer = false)
     {
         if (string.IsNullOrEmpty(iden))
             throw new ArgumentException("You must provide a valid view identifier.");
@@ -101,16 +102,28 @@ public class ViewHelper
         {
             Vars = new Dictionary<string, dynamic>()
             {
-                { "iden", iden }
+                { "iden", iden },
+                { "rm", removeLayer }
             }
         };
         var proxy = await _telepathClient.GetProxyAsync();
-        _ = await proxy.CallStormAsync("try { $lib.view.del($iden) } catch * as err { }", opts);
+        _ = await proxy.CallStormAsync("try { " +
+                                       " $view = $lib.view.get($iden)" +
+                                       " $lib.view.del($iden)" +
+                                       " if ($rm) { " +
+                                       "    if ($view) { " +
+                                       "        $layr = $view.layers.index(0)" +
+                                       "        if ($layr) { $lib.layer.del($layr.iden) } " +
+                                       "    } " +
+                                       " }" +
+                                       "} " +
+                                       "catch LayerInUse as err { }" +
+                                       "catch NoSuchView as err { }", opts);
     }
 
     public async Task Merge(string iden)
     {
-        var command = "try { $view = $lib.view.get($iden) $view.merge() } catch * as err { }";
+        var command = "try { $view = $lib.view.get($iden) $view.merge() } catch NoSuchView as err { }";
         var opts = new StormOps()
         {
             Vars = new Dictionary<string, dynamic>()
