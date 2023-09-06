@@ -524,10 +524,18 @@ public class Proxy : IDisposable
 
     private Task PutPoolLink(Link link)
     {
-        if (IsFini) return System.Threading.Tasks.Task.CompletedTask;
+        if (IsFini)
+        {
+            if (_logger != null) _logger.LogError($"Not putting link back in pool: {_links.Count}");
+            return System.Threading.Tasks.Task.CompletedTask;
+        }
+
         if (_links.Count > LinkPoolSize)
             link.Dispose();
-        _links.Enqueue(link);
+        else
+            _links.Enqueue(link);
+        if (_logger != null) 
+            _logger.LogError($"Size of pool link: {_links.Count}");
         return System.Threading.Tasks.Task.CompletedTask;
     }
 
