@@ -260,7 +260,7 @@ public class Link : IDisposable
     {
         if (_isFini)
         {
-            _logger?.LogTrace("Link {LinkId} is already finished", this.GetHashCode().ToString("X4"));
+            _logger?.LogTrace("Link {LinkId} is already finished, ignore", this.GetHashCode().ToString("X4"));
             return;
         }
 

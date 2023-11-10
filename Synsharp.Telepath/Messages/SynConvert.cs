@@ -32,7 +32,7 @@ public static class SynConvert
         return new SynapseInit()
         {
             Task = o["task"],
-            Tick = o["tick"],
+            Tick = Convert.ToUInt64(o["tick"]),
             Text = o["text"]
         };
     }
@@ -41,9 +41,9 @@ public static class SynConvert
     {
         return new SynapseFini()
         {
-            Tock = o["tock"],
-            Took = o["took"],
-            Count = o["count"]
+            Tock = Convert.ToUInt64(o["tock"]),
+            Took = Convert.ToUInt64(o["took"]),
+            Count = Convert.ToUInt64(o["count"])
         };
     }
     
