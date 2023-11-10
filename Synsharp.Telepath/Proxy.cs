@@ -534,8 +534,8 @@ public class Proxy : IDisposable
             link.Dispose();
         else
             _links.Enqueue(link);
-        if (_logger != null) 
-            _logger.LogError($"Size of pool link: {_links.Count}");
+        _logger?.LogTrace($"Size of pool link: {_links.Count}");
+        
         return System.Threading.Tasks.Task.CompletedTask;
     }
 
@@ -574,6 +574,18 @@ public class Proxy : IDisposable
             { "opts", opts }
         };
         await foreach (var m in Stream("storm", args, kwargs))
-            yield return SynConvert.ToMessage(m);
+        {
+            dynamic message;
+            try
+            {
+                message = SynConvert.ToMessage(m);
+            }
+            catch (Exception e)
+            {
+                _logger?.LogError($"Could not convert message: {JsonConvert.SerializeObject(m)}");
+                yield break;
+            }
+            yield return message;
+        }
     }
 }
